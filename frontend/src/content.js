@@ -1,4 +1,6 @@
-// Conteúdo do site Teleios Studio — voz próxima e informal ("a gente").
+// Conteúdo do site Teleios — agência de marketing para PMEs.
+// Voz próxima e informal ("a gente"). Sem números ou depoimentos inventados:
+// troque os cases e acrescente resultados reais quando tiver.
 
 export const contact = {
   whatsapp: '5515981763815',
@@ -6,152 +8,217 @@ export const contact = {
   email: 'contato@teleiosstudio.com',
 };
 
-export const whatsappLink = (text = 'Oi, Teleios! Quero conversar sobre um projeto.') =>
+export const whatsappLink = (text = 'Oi, Teleios! Quero um diagnóstico do marketing da minha empresa.') =>
   `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(text)}`;
 
 export const socialLinks = [
   { id: 'instagram', label: 'Instagram', href: 'https://instagram.com/teleiosstudio' },
   { id: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com/company/teleiosstudio' },
   { id: 'youtube', label: 'YouTube', href: 'https://youtube.com/@teleiosstudio' },
-  { id: 'github', label: 'GitHub', href: 'https://github.com/teleiosstudio' },
 ];
+
+/* Mensagens que ilustram o resultado desejado no hero (não são depoimentos). */
+export const incoming = [
+  { name: 'Mariana', text: 'Oi! Vi o anúncio de vocês. Ainda tem horário essa semana?', time: '09:12' },
+  { name: 'Carlos', text: 'Quero um orçamento. Vocês atendem empresa?', time: '09:47' },
+  { name: 'Júlia', text: 'Minha amiga indicou o Instagram de vocês 😊', time: '10:05' },
+  { name: 'Rafael', text: 'Consigo fechar ainda hoje?', time: '10:31' },
+];
+
+export const pains = [
+  { quote: 'Posto todo dia e o WhatsApp não toca.', note: 'Conteúdo sem estratégia vira diário, não vitrine.' },
+  { quote: 'Minha empresa é melhor que a concorrente, mas parece pior no Instagram.', note: 'O cliente julga antes de conhecer. A marca fala primeiro.' },
+  { quote: 'Já paguei agência e só recebi relatório de curtida.', note: 'Curtida não paga boleto. Conversa e venda pagam.' },
+  { quote: 'Dependo de indicação e nunca sei como vai ser o próximo mês.', note: 'Indicação é ótima. Só não pode ser o único canal.' },
+];
+
+export const manifesto =
+  'Marketing bonito que não vende é decoração. A gente junta marca, conteúdo, anúncio e site num plano só, feito por um time só e medido pelo que importa: gente chamando, agenda cheia e venda fechada.';
 
 export const services = [
   {
-    id: 'programacao',
+    id: 'marca',
     number: '01',
-    title: 'Programação',
-    category: 'Programação',
-    headline: 'O sistema que tira sua operação da planilha.',
+    title: 'Posicionamento e marca',
+    outcome: 'Pare de competir por preço.',
     description:
-      'Sistemas web, aplicativos e integrações feitos sob medida para o jeito que sua empresa trabalha. Código limpo, documentado e pronto para crescer junto com você.',
-    deliverables: ['Sistemas web e painéis', 'Aplicativos mobile', 'Integrações e APIs', 'Sites e landing pages'],
+      'A gente define o que faz sua empresa ser a escolha certa e transforma isso em identidade visual, tom de voz e mensagem. Quando a marca é clara, o cliente entende o valor antes de perguntar quanto custa.',
+    deliverables: ['Diagnóstico de posicionamento', 'Identidade visual', 'Tom de voz', 'Guia de marca'],
+    art: 'brand',
   },
   {
-    id: 'design',
+    id: 'conteudo',
     number: '02',
-    title: 'Design',
-    category: 'Design',
-    headline: 'Uma marca que as pessoas reconhecem de longe.',
+    title: 'Conteúdo e redes sociais',
+    outcome: 'Um perfil que faz o cliente chamar.',
     description:
-      'Identidade visual, interfaces e design system. A gente organiza como sua empresa aparece, do logo à tela do sistema, para tudo parecer parte da mesma coisa.',
-    deliverables: ['Identidade visual', 'UI/UX de produto', 'Design system', 'Peças para redes'],
+      'Planejamento, roteiro, design e publicação. Cada post tem um papel: atrair, gerar confiança ou puxar a conversa. Nada de postar por postar.',
+    deliverables: ['Calendário editorial', 'Posts e carrosséis', 'Reels e stories', 'Gestão do perfil'],
+    art: 'feed',
+  },
+  {
+    id: 'trafego',
+    number: '03',
+    title: 'Tráfego pago',
+    outcome: 'Anúncio que chega em quem compra.',
+    description:
+      'Campanhas no Instagram, Facebook e Google para quem está procurando o que você vende, na sua região. Você acompanha quantas conversas e pedidos cada real investido trouxe.',
+    deliverables: ['Meta Ads', 'Google Ads', 'Criativos para anúncio', 'Relatório de conversas e vendas'],
+    art: 'ad',
   },
   {
     id: 'video',
-    number: '03',
-    title: 'Vídeo',
-    category: 'Vídeo',
-    headline: 'O vídeo que explica o que você faz em 60 segundos.',
+    number: '04',
+    title: 'Vídeo e motion',
+    outcome: 'Mostrar vende mais que explicar.',
     description:
-      'Institucional, motion graphics e edição. Do roteiro à entrega final, a gente transforma o que sua empresa faz numa história fácil de entender e de lembrar.',
-    deliverables: ['Vídeo institucional', 'Motion graphics', 'Edição e finalização', 'Conteúdo para redes'],
+      'Do reels de 15 segundos ao vídeo institucional. Roteiro, captação, edição e animação pensados para prender atenção nos primeiros três segundos.',
+    deliverables: ['Reels e vídeos curtos', 'Vídeo institucional', 'Motion graphics', 'Vídeo para anúncio'],
+    art: 'reel',
+  },
+  {
+    id: 'site',
+    number: '05',
+    title: 'Sites e landing pages',
+    outcome: 'Uma página que transforma visita em contato.',
+    description:
+      'Site rápido, bonito no celular e escrito para vender. Landing pages para cada campanha, com o botão de WhatsApp no lugar certo.',
+    deliverables: ['Site institucional', 'Landing pages', 'Página de captura', 'Integração com WhatsApp'],
+    art: 'site',
   },
 ];
 
-export const touchpoints = ['Sistema', 'Site', 'Marca', 'Redes sociais', 'Vídeo'];
+export const extraService = {
+  title: 'E quando o marketing pede mais, a gente programa.',
+  description:
+    'Sistemas, aplicativos e automações sob medida para a operação acompanhar o crescimento. Mesmo time, sem precisar contratar outra empresa.',
+};
 
+export const steps = [
+  { step: '01', title: 'Diagnóstico', description: 'A gente analisa sua marca, seu perfil, seus concorrentes e como os clientes chegam hoje. Você sai sabendo onde está perdendo venda.' },
+  { step: '02', title: 'Plano de 90 dias', description: 'Metas claras, canais escolhidos e o que vai ser feito semana a semana. Você aprova antes de começar.' },
+  { step: '03', title: 'Execução', description: 'Marca, conteúdo, anúncios e site saindo do mesmo time, todos apontando para o mesmo objetivo.' },
+  { step: '04', title: 'Números na mesa', description: 'Todo mês: quantas conversas, quantos orçamentos, quantas vendas. E o que vamos ajustar para o próximo.' },
+];
+
+export const comparison = {
+  columns: ['Freelancer de post', 'Agência tradicional', 'Teleios'],
+  rows: [
+    { label: 'Estratégia antes de criar qualquer post', values: ['no', 'partial', 'yes'] },
+    { label: 'Marca, conteúdo, anúncio e site no mesmo time', values: ['no', 'partial', 'yes'] },
+    { label: 'Relatório com conversas e vendas, não curtidas', values: ['no', 'partial', 'yes'] },
+    { label: 'Você fala direto com quem faz', values: ['yes', 'no', 'yes'] },
+    { label: 'Site, sistema ou automação quando precisar', values: ['no', 'no', 'yes'] },
+  ],
+};
+
+// TODO: substituir pelos cases reais (nome do cliente, imagens e resultados).
 export const projects = [
   {
-    id: 'gestao-empresarial',
-    title: 'Sistema de Gestão Empresarial',
-    client: 'Indústria de médio porte',
-    category: 'Programação',
-    type: 'Sistema web',
-    summary: 'Painel com estoque, pedidos e indicadores num lugar só. Acabou a planilha paralela.',
-    tags: ['React', 'Node.js', 'PostgreSQL'],
-    year: '2024',
-    cover: 'dashboard',
+    id: 'clinica',
+    title: 'Clínica odontológica',
+    category: 'Marca',
+    services: ['Reposicionamento', 'Identidade visual', 'Social media'],
+    challenge: 'Clínica premium que parecia popular no Instagram.',
+    palette: { bg: '#E8F1EE', ink: '#0F3B33', accent: '#3FB59A' },
+    poster: 'sorria',
     size: 'wide',
   },
   {
-    id: 'techflow',
-    title: 'TechFlow',
-    client: 'Startup de tecnologia',
-    category: 'Design',
-    type: 'Identidade visual',
-    summary: 'Marca completa: logo, paleta, tipografia e guia de uso para o time aplicar sozinho.',
-    tags: ['Branding', 'Design system'],
-    year: '2024',
-    cover: 'brand',
+    id: 'advocacia',
+    title: 'Escritório de advocacia',
+    category: 'Marca',
+    services: ['Identidade visual', 'Site institucional'],
+    challenge: 'Marca séria sem ser fria, para atrair empresas.',
+    palette: { bg: '#14213D', ink: '#F2E8D5', accent: '#C9A24D' },
+    poster: 'lex',
     size: 'half',
   },
   {
-    id: 'inovacorp',
-    title: 'InovaCorp',
-    client: 'Consultoria',
-    category: 'Vídeo',
-    type: 'Vídeo institucional',
-    summary: 'Dois minutos apresentando missão, time e serviços, com roteiro e motion próprios.',
-    tags: ['Roteiro', 'Edição', 'Motion'],
-    year: '2024',
-    cover: 'video',
+    id: 'restaurante',
+    title: 'Restaurante italiano',
+    category: 'Conteúdo',
+    services: ['Social media', 'Reels', 'Tráfego pago'],
+    challenge: 'Casa cheia no fim de semana, vazia na terça.',
+    palette: { bg: '#D9442B', ink: '#FFF4E6', accent: '#FFC94A' },
+    poster: 'nonna',
     size: 'half',
   },
   {
-    id: 'fittracker',
-    title: 'FitTracker',
-    client: 'Rede de academias',
-    category: 'Programação',
-    type: 'Aplicativo',
-    summary: 'App de treino com metas, ranking entre alunos e sincronização em tempo real.',
-    tags: ['React Native', 'Firebase'],
-    year: '2023',
-    cover: 'app',
+    id: 'academia',
+    title: 'Rede de academias',
+    category: 'Tráfego',
+    services: ['Campanhas Meta Ads', 'Landing page', 'Vídeo'],
+    challenge: 'Matrículas concentradas em janeiro. O resto do ano, parado.',
+    palette: { bg: '#0D0D0D', ink: '#F4F4F0', accent: '#D7FF3A' },
+    poster: 'move',
     size: 'wide',
   },
   {
-    id: 'analytics',
-    title: 'Dashboard Analytics',
-    client: 'Empresa de logística',
-    category: 'Design',
-    type: 'Interface',
-    summary: 'Dados de entrega que antes ninguém lia, organizados em telas que o gestor entende em segundos.',
-    tags: ['UI/UX', 'Dataviz'],
-    year: '2023',
-    cover: 'chart',
+    id: 'industria',
+    title: 'Indústria de embalagens',
+    category: 'Vídeo',
+    services: ['Vídeo institucional', 'Motion', 'LinkedIn'],
+    challenge: 'Vender para grandes empresas sem parecer pequena.',
+    palette: { bg: '#1F3C88', ink: '#EEF2FF', accent: '#00C48C' },
+    poster: 'pack',
     size: 'half',
   },
   {
-    id: 'lancamento',
-    title: 'Lançamento de Produto',
-    client: 'Software house',
-    category: 'Vídeo',
-    type: 'Motion graphics',
-    summary: 'Animação explicativa de 60 segundos para apresentar um produto digital novo.',
-    tags: ['After Effects', 'Motion'],
-    year: '2024',
-    cover: 'motion',
+    id: 'estetica',
+    title: 'Studio de estética',
+    category: 'Tráfego',
+    services: ['Google Ads', 'Landing page', 'Social media'],
+    challenge: 'Agenda dependendo só de indicação.',
+    palette: { bg: '#F3E4E1', ink: '#4A1F2A', accent: '#C86B7E' },
+    poster: 'glow',
     size: 'half',
   },
 ];
 
-export const process = [
-  {
-    step: '01',
-    title: 'Conversa',
-    description: 'A gente entende seu negócio, o problema de verdade e onde você quer chegar. Sem formulário de 40 perguntas.',
-  },
-  {
-    step: '02',
-    title: 'Plano',
-    description: 'Você recebe escopo, prazo e valor claros. Dá para saber exatamente o que vai ser entregue antes de começar.',
-  },
-  {
-    step: '03',
-    title: 'Mão na massa',
-    description: 'Entregas a cada etapa, com você acompanhando de perto. Ajustes acontecem no caminho, não no final.',
-  },
-  {
-    step: '04',
-    title: 'Entrega e suporte',
-    description: 'Projeto pronto, testado e explicado. E a gente continua por perto depois que ele vai ao ar.',
-  },
+export const audiences = [
+  'Clínicas e consultórios',
+  'Escritórios e consultorias',
+  'Restaurantes e food service',
+  'Comércio local',
+  'Academias e estúdios',
+  'Indústrias e B2B',
+  'Prestadores de serviço',
 ];
 
-export const differentials = [
-  { title: 'Um time só', description: 'Quem programa trabalha junto com quem desenha e quem edita. Nada se perde entre fornecedores.' },
-  { title: 'Fala a sua língua', description: 'Sem jargão. Você entende o que está sendo feito e por quê.' },
-  { title: 'Feito para durar', description: 'Código organizado e marca com guia de uso. Fácil de manter e de evoluir.' },
-  { title: 'Entrega de verdade', description: 'Projeto finalizado, testado e no ar. Não um rascunho bonito.' },
+export const fitYes = [
+  'Você sabe que sua empresa é boa e quer que o digital mostre isso.',
+  'Você quer medir marketing em conversas e vendas.',
+  'Você prefere um time só cuidando de tudo, em vez de cinco fornecedores.',
+];
+export const fitNo = [
+  'Você procura só post barato para "não deixar o perfil parado".',
+  'Você espera resultado na primeira semana sem plano.',
+];
+
+export const faq = [
+  {
+    q: 'Quanto custa?',
+    a: 'Depende do que sua empresa precisa agora. Depois do diagnóstico você recebe uma proposta com escopo, prazo e valor fechados. Sem letra miúda.',
+  },
+  {
+    q: 'Em quanto tempo eu vejo resultado?',
+    a: 'Anúncio bem feito começa a gerar conversa nas primeiras semanas. Marca e conteúdo constroem resultado no médio prazo. No plano de 90 dias você vê o que esperar de cada frente.',
+  },
+  {
+    q: 'Preciso aparecer em vídeo?',
+    a: 'Ajuda, mas não é obrigatório. A gente encontra o formato que funciona para você, seja com você na frente da câmera, com a equipe ou só com produto e bastidores.',
+  },
+  {
+    q: 'Já tenho designer ou social media. Vocês trabalham junto?',
+    a: 'Sim. Dá para a gente entrar só com estratégia e tráfego, por exemplo, e trabalhar junto com quem já cuida do seu perfil.',
+  },
+  {
+    q: 'Vocês fazem só o site?',
+    a: 'Fazemos. E se em algum momento precisar de sistema, app ou automação, o mesmo time desenvolve.',
+  },
+  {
+    q: 'Tem contrato de fidelidade?',
+    a: 'A gente trabalha com ciclos de planejamento. Os detalhes de prazo e cancelamento ficam claros na proposta, antes de você assinar qualquer coisa.',
+  },
 ];

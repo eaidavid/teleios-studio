@@ -2,12 +2,12 @@ import React, { useMemo, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import ProjectCard from '../components/ProjectCard';
 import { Lines } from '../components/Effects';
-import { projects, services, whatsappLink } from '../content';
+import { projects, whatsappLink } from '../content';
 import { layoutProjects } from '../lib/layout';
 import './Home.css';
 import './Projects.css';
 
-const categories = ['Todos', ...services.map((s) => s.category)];
+const categories = ['Todos', ...Array.from(new Set(projects.map((p) => p.category)))];
 
 const Projects = () => {
   const [cat, setCat] = useState('Todos');
@@ -20,20 +20,20 @@ const Projects = () => {
     <>
       <section className="pp-hero">
         <div className="container">
-          <span className="label reveal"><b>{String(projects.length).padStart(2, '0')}</b> Projetos</span>
+          <span className="label reveal"><b>{String(projects.length).padStart(2, '0')}</b> Cases</span>
           <h1 className="mix pp-hero__title">
-            <Lines lines={[<>Tudo que a gente</>, <><strong>já colocou no ar</strong></>]} delay={0.1} />
+            <Lines lines={[<>Empresas que hoje</>, <><strong>são <em className="g">escolhidas</em></strong></>]} delay={0.1} />
           </h1>
           <p className="lead reveal" style={{ '--d': '0.3s' }}>
-            Sistemas, marcas e vídeos para empresas de vários tamanhos. Filtra pelo que você precisa e vê como a gente
-            resolveu problemas parecidos com o seu.
+            Clínicas, escritórios, restaurantes, indústrias. Filtra pelo tipo de trabalho e vê como a gente resolveu
+            problemas parecidos com o seu.
           </p>
         </div>
       </section>
 
-      <section className="section pp-list" aria-label="Lista de projetos">
+      <section className="section pp-list" aria-label="Lista de cases">
         <div className="container">
-          <div className="filters" role="tablist" aria-label="Filtrar projetos">
+          <div className="filters" role="tablist" aria-label="Filtrar cases">
             {categories.map((c) => {
               const count = c === 'Todos' ? projects.length : projects.filter((p) => p.category === c).length;
               return (
@@ -57,9 +57,9 @@ const Projects = () => {
           </div>
 
           <div className="pp-cta reveal">
-            <p className="mix">Seu projeto pode ser <strong>o próximo daqui.</strong></p>
-            <a className="btn btn-primary" href={whatsappLink('Oi, Teleios! Vi os projetos e quero conversar sobre o meu.')} target="_blank" rel="noopener noreferrer">
-              Bora conversar <ArrowUpRight size={18} />
+            <p className="mix">O próximo case pode ser <strong>o seu.</strong></p>
+            <a className="btn btn-primary" href={whatsappLink('Oi, Teleios! Vi os cases e quero um diagnóstico do meu marketing.')} target="_blank" rel="noopener noreferrer">
+              Quero um diagnóstico <ArrowUpRight size={18} />
             </a>
           </div>
         </div>

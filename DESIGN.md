@@ -6,8 +6,9 @@
 
 ## Leitura e dials
 
-- **Produto:** site institucional de estúdio de programação, design e vídeo
-- **Público:** donos e gestores de PMEs
+- **Produto:** site de **agência de marketing** para PMEs (programação é serviço secundário)
+- **Público:** donos e gestores de PMEs que querem vender mais pelo digital
+- **Promessa:** "Marketing que enche a agenda, não só o feed." — medido em conversas e vendas, não em curtidas
 - **Tema:** `calmo, preciso, completo`
 - **Dials:** Criatividade = Equilibrada · Densidade = Arejada · Variação = Baixa · Movimento = Cinético
 - **Restrições:** manter o verde `#00C48C` e o azul `#0B1C2D`; sem fotografia por enquanto; voz próxima e informal
@@ -45,6 +46,7 @@ Regra: o verde nunca vira gradiente de texto nem fundo de seção inteira. Uma l
 |---|---|---|
 | Display / títulos | Sora | parte fina 300 em `--text-2` + parte negrita 700 em `--text`; tracking −4%; lh 1.02 |
 | Texto | Inter | 400/500/600, lh 1.6, ~56–65ch |
+| Ênfase | Instrument Serif itálico | uma palavra por título (*agenda*, *escolhida*), citações das dores |
 | Rótulos | JetBrains Mono | 12px, caixa alta, tracking +12%, número da seção em verde |
 
 Escala: `xs 12` · `sm 14` · `base 16` · `md 18` · `lg 21` · `xl clamp(26–36)` · `2xl clamp(34–58)` · `3xl clamp(35–80)` · display `clamp(42–92)`.
@@ -59,8 +61,9 @@ Escala: `xs 12` · `sm 14` · `base 16` · `md 18` · `lg 21` · `xl clamp(26–
 
 ## Estrutura
 
-Home longa: Hero → Posicionamento (01) → faixa de serviços → Projetos (02) → Serviços (03) → Processo (04) → Diferencial (05) → Sobre (06) → Contato (07).
-Página `/projetos` com todos os projetos e filtro. As rotas antigas `/sobre`, `/servicos` e `/contato` redirecionam para as âncoras da home.
+Home comercial: Hero → Dores (01) → Manifesto (02) → Serviços em cards empilhados (03) → Como funciona (04) → Comparação (05) → Cases (06) → Para quem é (07) → FAQ (08) → Contato/diagnóstico.
+Página `/cases` com todos os cases e filtro. `/projetos`, `/sobre`, `/servicos` e `/contato` redirecionam.
+CTA principal em todo o site: **Quero um diagnóstico** (abre o WhatsApp com mensagem pronta).
 
 ## Movimento (cinético)
 
@@ -68,7 +71,9 @@ Página `/projetos` com todos os projetos e filtro. As rotas antigas `/sobre`, `
 |---|---|
 | Títulos | linhas sobem por máscara (stagger 90ms) ao entrar na tela |
 | Blocos | fade + subida de 28px ao entrar |
-| Hero | composição de sistema, marca e vídeo com parallax pelo mouse; barras animadas; timecode correndo; playhead em loop |
+| Hero | pilha de mensagens de clientes chegando em loop; avatares surgindo dentro do título |
+| Manifesto | palavras acendem conforme a rolagem |
+| Serviços | cards grudam e empilham durante a rolagem, cada um com ilustração animada (marca, feed, anúncio, reels, site) |
 | Contínuo | faixa de serviços em marquee; palavra gigante "Inteiro" desliza com o scroll |
 | Destaques | sublinhado verde se desenha; linha do processo se preenche e acende os passos |
 | Hover | CTA com preenchimento de baixo para cima; seta do card gira 45°; capa do projeto dá zoom leve |
@@ -79,7 +84,7 @@ Easing padrão `cubic-bezier(.2,.8,.2,1)`.
 ## Voz
 
 Próxima e informal: "a gente", "bora conversar", frases curtas. Explica o resultado para o dono da empresa, não a tecnologia.
-Evitar: "soluções inovadoras", "excelência técnica", "transformação digital".
+Evitar: "soluções inovadoras", "excelência técnica", "transformação digital". Falar de resultado do negócio (agenda, orçamento, venda), nunca de curtida.
 
 ## Marca
 
@@ -87,5 +92,6 @@ Logo definitivo: **pendente**. Provisório: quadrado verde arredondado com "T" +
 
 ## Imagens
 
-Sem fotografia por ora. O hero usa uma composição em código, e cada projeto tem uma capa ilustrativa em CSS por tipo
-(dashboard, marca, vídeo, app, gráfico, motion). **Substituir pelas imagens reais dos projetos** quando existirem (`ProjectCard.jsx`).
+Sem fotografia por ora. Nada de mockup de dashboard: as ilustrações mostram peças de marketing (mensagens, feed, anúncio, reels, landing page).
+Cases usam pôsteres tipográficos com a paleta de cada cliente. **Os cases atuais são exemplos**: substituir por clientes, imagens e resultados reais (`content.js`, `ProjectCard.jsx`).
+Nenhum número ou depoimento foi inventado; acrescentar provas reais quando houver.

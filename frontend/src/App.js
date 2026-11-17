@@ -18,7 +18,8 @@ function App() {
         <main id="conteudo">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/projetos" element={<Projects />} />
+            <Route path="/cases" element={<Projects />} />
+            <Route path="/projetos" element={<Navigate to="/cases" replace />} />
             {/* Rotas antigas viram âncoras da home */}
             <Route path="/sobre" element={<Navigate to="/#sobre" replace />} />
             <Route path="/servicos" element={<Navigate to="/#servicos" replace />} />

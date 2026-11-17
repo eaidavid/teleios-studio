@@ -6,10 +6,10 @@ import { whatsappLink } from '../content';
 import './Navbar.css';
 
 const links = [
-  { id: 'projetos', label: 'Projetos' },
   { id: 'servicos', label: 'Serviços' },
-  { id: 'sobre', label: 'Sobre' },
-  { id: 'contato', label: 'Contato' },
+  { id: 'como-funciona', label: 'Como funciona' },
+  { id: 'cases', label: 'Cases' },
+  { id: 'faq', label: 'FAQ' },
 ];
 
 const Navbar = () => {
@@ -30,8 +30,8 @@ const Navbar = () => {
 
   // Scroll-spy: qual seção está na tela
   useEffect(() => {
-    if (pathname.startsWith('/projetos')) {
-      setActive('projetos');
+    if (pathname.startsWith('/cases')) {
+      setActive('cases');
       return undefined;
     }
     const sections = links.map((l) => document.getElementById(l.id)).filter(Boolean);
@@ -91,7 +91,7 @@ const Navbar = () => {
             <Link
               key={l.id}
               data-id={l.id}
-              to={l.id === 'projetos' && pathname.startsWith('/projetos') ? '/projetos' : `/#${l.id}`}
+              to={l.id === 'cases' && pathname.startsWith('/cases') ? '/cases' : `/#${l.id}`}
               className={`nav__link ${active === l.id ? 'is-active' : ''}`}
               aria-current={active === l.id ? 'true' : undefined}
             >
@@ -101,7 +101,7 @@ const Navbar = () => {
         </nav>
 
         <a className="btn btn-primary btn-sm nav__cta" href={whatsappLink()} target="_blank" rel="noopener noreferrer">
-          Bora conversar <ArrowUpRight size={16} />
+          Quero um diagnóstico <ArrowUpRight size={16} />
         </a>
 
         <button

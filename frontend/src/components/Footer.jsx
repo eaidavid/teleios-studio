@@ -15,7 +15,7 @@ const Footer = () => {
           <div className="footer__brand">
             <Logo />
             <p>
-              Código, design e vídeo para empresas que querem fazer tudo direito, do começo ao fim.
+              Agência de marketing para empresas que querem ser escolhidas. Marca, conteúdo, anúncios, vídeo e site num time só.
             </p>
           </div>
 
@@ -23,9 +23,10 @@ const Footer = () => {
             <div>
               <h2 className="label">Navegação</h2>
               <ul>
-                <li><Link to="/#projetos">Projetos</Link></li>
                 <li><Link to="/#servicos">Serviços</Link></li>
-                <li><Link to="/#sobre">Sobre</Link></li>
+                <li><Link to="/#como-funciona">Como funciona</Link></li>
+                <li><Link to="/cases">Cases</Link></li>
+                <li><Link to="/#faq">FAQ</Link></li>
                 <li><Link to="/#contato">Contato</Link></li>
               </ul>
             </div>
@@ -65,7 +66,7 @@ const Footer = () => {
 
         <div className="footer__bottom">
           <span>© {year} Teleios Studio</span>
-          <span>τέλειος · completo, feito até o fim</span>
+          <span>τέλειος · completo</span>
         </div>
       </div>
     </footer>
