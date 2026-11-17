@@ -69,7 +69,7 @@ const Hero = () => (
       <div className="hero__row">
         <div className="hero__copy">
           <p className="hero__sub reveal" style={{ '--d': '0.35s' }}>
-            A Teleios cuida da sua marca, do conteúdo, dos anúncios e do site com um time só. Tudo apontando para o mesmo
+            A Agência Teleios cuida da sua marca, do conteúdo, dos anúncios e do site com um time só. Tudo apontando para o mesmo
             lugar: <span>mais gente chamando no seu WhatsApp.</span>
           </p>
           <div className="hero__cta reveal" style={{ '--d': '0.45s' }}>
@@ -343,7 +343,7 @@ const Faq = () => {
           {faq.map((f, i) => {
             const isOpen = open === i;
             return (
-              <div key={f.q} className={`qa reveal ${isOpen ? 'is-open' : ''}`}>
+              <div key={f.q} className="reveal"><div className={`qa ${isOpen ? 'is-open' : ''}`}>
                 <h3>
                   <button type="button" aria-expanded={isOpen} aria-controls={`qa-${i}`} id={`qa-b-${i}`} onClick={() => setOpen(isOpen ? -1 : i)}>
                     {f.q}
@@ -353,7 +353,7 @@ const Faq = () => {
                 <div className="qa__a" id={`qa-${i}`} role="region" aria-labelledby={`qa-b-${i}`}>
                   <div><p>{f.a}</p></div>
                 </div>
-              </div>
+              </div></div>
             );
           })}
         </div>

@@ -65,7 +65,7 @@ const Footer = () => {
         <div className="footer__word" aria-hidden="true">teleios</div>
 
         <div className="footer__bottom">
-          <span>© {year} Teleios Studio</span>
+          <span>© {year} Agência Teleios</span>
           <span>τέλειος · completo</span>
         </div>
       </div>

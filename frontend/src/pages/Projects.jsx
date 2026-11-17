@@ -25,8 +25,8 @@ const Projects = () => {
             <Lines lines={[<>Empresas que hoje</>, <><strong>são <em className="g">escolhidas</em></strong></>]} delay={0.1} />
           </h1>
           <p className="lead reveal" style={{ '--d': '0.3s' }}>
-            Clínicas, escritórios, restaurantes, indústrias. Filtra pelo tipo de trabalho e vê como a gente resolveu
-            problemas parecidos com o seu.
+            Identidade visual, interfaces, sites, sistemas e vídeo. Filtra pelo tipo de trabalho e vê como a gente
+            resolveu problemas parecidos com o seu.
           </p>
         </div>
       </section>

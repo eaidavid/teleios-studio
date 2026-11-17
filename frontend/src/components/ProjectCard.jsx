@@ -4,16 +4,16 @@ import './ProjectCard.css';
 
 /* Capa em estilo pôster com a paleta do cliente. Substituir por imagens reais do case. */
 const Poster = ({ project }) => {
-  const { palette, poster } = project;
+  const { palette, layout, word } = project;
   return (
     <div
-      className={`poster poster--${poster}`}
+      className={`poster poster--${layout}`}
       style={{ '--p-bg': palette.bg, '--p-ink': palette.ink, '--p-ac': palette.accent }}
       aria-hidden="true"
     >
       <span className="poster__shape" />
       <span className="poster__shape poster__shape--2" />
-      <span className="poster__word">{poster}</span>
+      <span className="poster__word">{word}</span>
       <span className="poster__meta">{project.services[0]}</span>
     </div>
   );

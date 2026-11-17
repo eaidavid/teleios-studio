@@ -118,6 +118,20 @@
 .poster--sorria .poster__shape { right: 7%; top: 34%; width: 22%; aspect-ratio: 2 / 1; border-radius: 0 0 999px 999px; }
 .poster--sorria .poster__shape--2 { right: 12%; top: 16%; width: 4%; aspect-ratio: 1; border-radius: 50%; box-shadow: calc(-1 * clamp(40px, 6vw, 90px)) 0 0 var(--p-ac); }
 
+/* flow: palavra + linhas de fluxo */
+.poster--flow .poster__word { left: 6%; bottom: 14%; font-size: clamp(72px, 13vw, 200px); }
+.poster--flow .poster__shape {
+  right: 6%;
+  top: 12%;
+  width: 34%;
+  height: 46%;
+  background: repeating-linear-gradient(180deg, var(--p-ac) 0 14%, transparent 14% 24%);
+  border-radius: 999px 0 0 999px;
+  animation: flow 6s var(--ease-in-out) infinite alternate;
+}
+.poster--flow .poster__shape--2 { right: 4%; top: auto; bottom: 16%; width: 7%; height: auto; aspect-ratio: 1; border-radius: 50%; background: var(--p-ink); animation: none; }
+@keyframes flow { to { transform: translateX(-6%); } }
+
 /* lex: serifada centrada com moldura dourada */
 .poster--lex .poster__word {
   inset: 0;

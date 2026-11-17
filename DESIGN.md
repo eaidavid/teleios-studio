@@ -1,4 +1,4 @@
-# DESIGN.md — Teleios Studio
+# DESIGN.md — Agência Teleios
 
 > Linguagem visual da nova identidade (**v2 · "Inteiro no escuro"**). Fonte de verdade para o site.
 > Referência de direção aprovada pelo cliente: eversonwebdesigner.com (escuro premium, títulos com dois pesos, um único acento).
@@ -88,7 +88,7 @@ Evitar: "soluções inovadoras", "excelência técnica", "transformação digita
 
 ## Marca
 
-Logo definitivo: **pendente**. Provisório: quadrado verde arredondado com "T" + wordmark "**Teleios** studio" (Sora 700/300). Favicon: o mesmo "T".
+Logo definitivo: **pendente**. Provisório: quadrado verde arredondado com "T" + wordmark "agência **Teleios**" (Sora 300/700). Domínio: agenciateleios.com.br. Favicon: o mesmo "T".
 
 ## Imagens
 
