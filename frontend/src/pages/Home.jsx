@@ -6,7 +6,7 @@ import ProjectCard from '../components/ProjectCard';
 import ServiceArt from '../components/ServiceArt';
 import { Lines } from '../components/Effects';
 import {
-  audiences, comparison, contact, extraService, faq, fitNo, fitYes, manifesto, pains, projects, services, steps, whatsappLink,
+  audiences, comparison, contact, hasCases, extraService, faq, fitNo, fitYes, manifesto, pains, projects, services, steps, whatsappLink,
 } from '../content';
 import { layoutProjects } from '../lib/layout';
 import './Home.css';
@@ -76,8 +76,8 @@ const Hero = () => (
             <a className="btn btn-primary" href={whatsappLink()} target="_blank" rel="noopener noreferrer">
               Quero um diagnóstico <ArrowUpRight size={18} />
             </a>
-            <Link className="btn btn-ghost" to="/#cases">
-              Ver cases <ArrowDownRight size={18} />
+            <Link className="btn btn-ghost" to={hasCases ? '/#cases' : '/#servicos'}>
+              {hasCases ? 'Ver cases' : 'Ver serviços'} <ArrowDownRight size={18} />
             </Link>
           </div>
           <ul className="hero__trust reveal" style={{ '--d': '0.55s' }}>
@@ -301,7 +301,7 @@ const Fit = () => (
   <section className="section fit" aria-labelledby="fit-title">
     <div className="container">
       <div className="sec-head">
-        <span className="label reveal"><b>07</b> Para quem é</span>
+        <span className="label reveal"><b>{hasCases ? '07' : '06'}</b> Para quem é</span>
         <h2 id="fit-title" className="mix sec-head__title">
           <Lines lines={[<>Feito para empresas</>, <><strong>que querem crescer</strong></>]} />
         </h2>
@@ -330,7 +330,7 @@ const Faq = () => {
     <section className="section faq" id="faq" aria-labelledby="faq-title">
       <div className="container faq__grid">
         <div className="faq__aside">
-          <span className="label reveal"><b>08</b> Perguntas frequentes</span>
+          <span className="label reveal"><b>{hasCases ? '08' : '07'}</b> Perguntas frequentes</span>
           <h2 id="faq-title" className="mix sec-title">
             <Lines lines={[<>Antes de você</>, <><strong>perguntar</strong></>]} />
           </h2>
@@ -458,7 +458,7 @@ const Home = () => (
     <Services />
     <How />
     <Compare />
-    <Cases />
+    {hasCases && <Cases />}
     <Fit />
     <Faq />
     <Contact />

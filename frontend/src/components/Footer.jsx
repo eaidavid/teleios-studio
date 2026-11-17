@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import Logo from './Logo';
-import { contact, socialLinks, services, whatsappLink } from '../content';
+import { contact, hasCases, socialLinks, services, whatsappLink } from '../content';
 import './Footer.css';
 
 const Footer = () => {
@@ -25,7 +25,7 @@ const Footer = () => {
               <ul>
                 <li><Link to="/#servicos">Serviços</Link></li>
                 <li><Link to="/#como-funciona">Como funciona</Link></li>
-                <li><Link to="/cases">Cases</Link></li>
+                {hasCases && <li><Link to="/cases">Cases</Link></li>}
                 <li><Link to="/#faq">FAQ</Link></li>
                 <li><Link to="/#contato">Contato</Link></li>
               </ul>

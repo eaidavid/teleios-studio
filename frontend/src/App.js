@@ -6,6 +6,7 @@ import Projects from './pages/Projects';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { RevealManager, ScrollManager } from './components/Effects';
+import { hasCases } from './content';
 
 function App() {
   return (
@@ -18,7 +19,7 @@ function App() {
         <main id="conteudo">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/cases" element={<Projects />} />
+            <Route path="/cases" element={hasCases ? <Projects /> : <Navigate to="/" replace />} />
             <Route path="/projetos" element={<Navigate to="/cases" replace />} />
             {/* Rotas antigas viram âncoras da home */}
             <Route path="/sobre" element={<Navigate to="/#sobre" replace />} />

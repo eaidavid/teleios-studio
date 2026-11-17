@@ -2,15 +2,16 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import Logo from './Logo';
-import { whatsappLink } from '../content';
+import { hasCases, whatsappLink } from '../content';
 import './Navbar.css';
 
-const links = [
+const allLinks = [
   { id: 'servicos', label: 'Serviços' },
   { id: 'como-funciona', label: 'Como funciona' },
   { id: 'cases', label: 'Cases' },
   { id: 'faq', label: 'FAQ' },
 ];
+const links = allLinks.filter((l) => l.id !== 'cases' || hasCases);
 
 const Navbar = () => {
   const { pathname } = useLocation();

@@ -112,76 +112,18 @@ export const comparison = {
   ],
 };
 
-// Cases do portfólio da Teleios. Troque as capas por imagens reais quando tiver
-// e acrescente resultados (números) apenas se forem reais.
-export const projects = [
-  {
-    id: 'techflow',
-    title: 'TechFlow',
-    category: 'Design',
-    services: ['Identidade visual', 'Design system', 'Guia de marca'],
-    challenge: 'Criar do zero a marca de uma startup de tecnologia: logo, design system e guia para o time aplicar sozinho.',
-    palette: { bg: '#ECEBFF', ink: '#1B1464', accent: '#5B4BFF' },
-    layout: 'flow',
-    word: 'techflow',
-    size: 'wide',
-  },
-  {
-    id: 'analytics',
-    title: 'Dashboard Analytics',
-    category: 'Design',
-    services: ['UI/UX', 'Design de interface', 'Dataviz'],
-    challenge: 'Transformar dados complexos em telas claras, que o gestor entende em segundos.',
-    palette: { bg: '#0B1C2D', ink: '#E9EEEC', accent: '#00C48C' },
-    layout: 'glow',
-    word: 'dados',
-    size: 'half',
-  },
-  {
-    id: 'gestao',
-    title: 'Sistema de Gestão Empresarial',
-    category: 'Sites e sistemas',
-    services: ['Sistema web', 'Dashboard', 'Automação'],
-    challenge: 'Tirar a operação da planilha: estoque, pedidos e indicadores num lugar só.',
-    palette: { bg: '#F2EFE9', ink: '#14181D', accent: '#00C48C' },
-    layout: 'pack',
-    word: 'gestão',
-    size: 'half',
-  },
-  {
-    id: 'fittracker',
-    title: 'FitTracker',
-    category: 'Sites e sistemas',
-    services: ['Aplicativo', 'UI/UX', 'Gamificação'],
-    challenge: 'App de treino com metas, ranking e sincronização em tempo real para engajar alunos.',
-    palette: { bg: '#0D0D0D', ink: '#F4F4F0', accent: '#D7FF3A' },
-    layout: 'move',
-    word: 'fit',
-    size: 'wide',
-  },
-  {
-    id: 'inovacorp',
-    title: 'InovaCorp',
-    category: 'Vídeo',
-    services: ['Vídeo institucional', 'Roteiro', 'Motion'],
-    challenge: 'Apresentar visão, missão e serviços da empresa em dois minutos de vídeo.',
-    palette: { bg: '#14213D', ink: '#F2E8D5', accent: '#C9A24D' },
-    layout: 'lex',
-    word: 'Inova',
-    size: 'half',
-  },
-  {
-    id: 'lancamento',
-    title: 'Lançamento de produto',
-    category: 'Vídeo',
-    services: ['Motion graphics', 'Animação', 'Vídeo para anúncio'],
-    challenge: 'Explicar um produto digital novo em uma animação de 60 segundos.',
-    palette: { bg: '#D9442B', ink: '#FFF4E6', accent: '#FFC94A' },
-    layout: 'nonna',
-    word: 'play',
-    size: 'half',
-  },
-];
+// Cases reais da Agência Teleios. Enquanto a lista estiver vazia, a seção de cases,
+// o item "Cases" do menu e a página /cases ficam escondidos.
+// Formato de cada case:
+// {
+//   id: 'cliente', title: 'Nome do cliente', category: 'Design' | 'Sites e sistemas' | 'Vídeo',
+//   services: ['Identidade visual', '...'], challenge: 'Uma frase sobre o desafio.',
+//   palette: { bg: '#hex', ink: '#hex', accent: '#hex' },
+//   layout: 'flow' | 'glow' | 'pack' | 'move' | 'lex' | 'nonna' | 'sorria', word: 'palavra da capa',
+// }
+export const projects = [];
+
+export const hasCases = projects.length > 0;
 
 export const audiences = [
   'Clínicas e consultórios',
