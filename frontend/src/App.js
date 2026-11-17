@@ -1,26 +1,31 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
 import Home from './pages/Home';
-import About from './pages/About';
-import Services from './pages/Services';
 import Projects from './pages/Projects';
-import Contact from './pages/Contact';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import { RevealManager, ScrollManager } from './components/Effects';
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
+        <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
+        <ScrollManager />
+        <RevealManager />
         <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/sobre" element={<About />} />
-          <Route path="/servicos" element={<Services />} />
-          <Route path="/projetos" element={<Projects />} />
-          <Route path="/contato" element={<Contact />} />
-        </Routes>
+        <main id="conteudo">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/projetos" element={<Projects />} />
+            {/* Rotas antigas viram âncoras da home */}
+            <Route path="/sobre" element={<Navigate to="/#sobre" replace />} />
+            <Route path="/servicos" element={<Navigate to="/#servicos" replace />} />
+            <Route path="/contato" element={<Navigate to="/#contato" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
         <Footer />
       </BrowserRouter>
     </div>
