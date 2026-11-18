@@ -88,7 +88,14 @@ Evitar: "soluções inovadoras", "excelência técnica", "transformação digita
 
 ## Marca
 
-Logo definitivo: **pendente**. Provisório: quadrado verde arredondado com "T" + wordmark "agência **Teleios**" (Sora 300/700). Domínio: agenciateleios.com.br. Favicon: o mesmo "T".
+Nome: **Agência Teleios** (não usar mais "Teleios Studio"). Domínio: agenciateleios.com.br.
+
+**Logo (opção C · Assinatura):** a palavra "teleios" em Sora ExtraBold, convertida em curvas, com o pingo do i trocado por um círculo verde `#00C48C`
+(no fundo claro, `#00A876`). Ao lado, no menu, o rótulo "AGÊNCIA" em JetBrains Mono, caixa alta.
+**Ícone / favicon / foto de perfil:** "t" + pingo verde sobre `#05080C`.
+Arquivos em `/brand`: `teleios-logo-claro.svg` (para fundo escuro), `teleios-logo-escuro.svg` (para fundo claro), PNGs transparentes,
+`teleios-icone.svg`, `teleios-perfil-1080.png`, `apple-touch-icon.png`, `favicon-32.png`. Componente no site: `frontend/src/components/Logo.jsx`.
+Área de respiro: altura do pingo verde em volta da palavra. Não aplicar o pingo em outra cor nem esticar a palavra.
 
 ## Imagens
 

@@ -5,16 +5,16 @@
 export const contact = {
   whatsapp: '5515981763815',
   whatsappDisplay: '+55 15 98176-3815',
-  email: 'contato@teleiosstudio.com',
+  email: 'contato@agenciateleios.com.br',
 };
 
 export const whatsappLink = (text = 'Oi, Teleios! Quero um diagnóstico do marketing da minha empresa.') =>
   `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(text)}`;
 
 export const socialLinks = [
-  { id: 'instagram', label: 'Instagram', href: 'https://instagram.com/teleiosstudio' },
-  { id: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com/company/teleiosstudio' },
-  { id: 'youtube', label: 'YouTube', href: 'https://youtube.com/@teleiosstudio' },
+  { id: 'instagram', label: 'Instagram', href: 'https://instagram.com/agenciateleios' },
+  { id: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com/company/agenciateleios' },
+  { id: 'youtube', label: 'YouTube', href: 'https://youtube.com/@agenciateleios' },
 ];
 
 /* Mensagens que ilustram o resultado desejado no hero (não são depoimentos). */

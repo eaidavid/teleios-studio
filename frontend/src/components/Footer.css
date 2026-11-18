@@ -37,7 +37,7 @@
   color: var(--text-2);
   font-size: var(--fs-sm);
   transition: color 0.25s;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .footer__cols a:hover { color: var(--text); }
 .footer__social {
@@ -47,19 +47,18 @@
 }
 
 .footer__word {
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: clamp(5rem, 22vw, 20rem);
-  line-height: 0.8;
-  letter-spacing: -0.06em;
-  text-align: center;
+  display: flex;
+  justify-content: center;
   margin-top: clamp(48px, 8vw, 96px);
-  background: linear-gradient(180deg, var(--surface-3) 0%, transparent 92%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  margin-bottom: -2%;
+  color: var(--surface-3);
   user-select: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
 }
+.footer__word .logo { color: var(--surface-3); }
+.footer__word .logo__word { height: clamp(72px, 17vw, 250px); }
+.footer__word .logo__dot { fill: var(--green); opacity: 0.35; }
 
 .footer__bottom {
   display: flex;

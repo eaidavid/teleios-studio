@@ -44,7 +44,7 @@ const Footer = () => {
                 <li>
                   <a href={whatsappLink()} target="_blank" rel="noopener noreferrer">{contact.whatsappDisplay}</a>
                 </li>
-                <li><a href={`mailto:${contact.email}`}>{contact.email}</a></li>
+                <li><a href={`mailto:${contact.email}`}>{contact.email.split('@')[0]}@<wbr />{contact.email.split('@')[1]}</a></li>
               </ul>
             </div>
             <div>
@@ -62,7 +62,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="footer__word" aria-hidden="true">teleios</div>
+        <div className="footer__word" aria-hidden="true"><Logo tag={false} /></div>
 
         <div className="footer__bottom">
           <span>© {year} Agência Teleios</span>

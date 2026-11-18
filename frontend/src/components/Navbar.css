@@ -35,27 +35,20 @@
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-family: var(--f-display);
-  font-size: 1.05rem;
-  letter-spacing: -0.02em;
+  gap: 12px;
   color: var(--text);
 }
-.logo__mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  background: var(--green);
-  color: var(--green-ink);
-  font-weight: 700;
-  font-size: 0.95rem;
-  transition: transform 0.5s var(--ease);
+.logo__word { height: 26px; width: auto; display: block; overflow: visible; }
+.logo__dot { fill: var(--green); transform-box: fill-box; transform-origin: center; transition: transform 0.5s var(--ease); }
+.nav__logo:hover .logo__dot { transform: translateY(-14%) scale(1.15); }
+.logo__tag {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding-top: 3px;
 }
-.nav__logo:hover .logo__mark { transform: rotate(-8deg) scale(1.05); }
-.logo__word { font-weight: 300; color: var(--text-2); }
-.logo__word b { font-weight: 700; color: var(--text); }
 
 .nav__links {
   position: relative;

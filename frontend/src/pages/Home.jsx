@@ -253,7 +253,7 @@ const Compare = () => (
           <span role="columnheader" className="cmp__label" />
           {comparison.columns.map((c, i) => (
             <span role="columnheader" key={c} className={i === 2 ? 'cmp__us' : ''}>
-              {i === 2 ? <><span className="cmp__logo">T</span>{c}</> : c}
+              {i === 2 ? <><img className="cmp__logo" src="/favicon.svg" alt="" />{c}</> : c}
             </span>
           ))}
         </div>
