@@ -55,7 +55,7 @@ const Hero = () => (
               <span className="hero__faces" aria-hidden="true">
                 <i style={{ background: '#00C48C' }}>M</i>
                 <i style={{ background: '#6F86C8' }}>C</i>
-                <i style={{ background: '#E8A87C' }}>J</i>
+                <i style={{ background: '#E8A87C' }}>R</i>
                 <b>+</b>
               </span>
               <strong>não só</strong>

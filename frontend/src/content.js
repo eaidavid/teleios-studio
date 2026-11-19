@@ -21,7 +21,6 @@ export const socialLinks = [
 export const incoming = [
   { name: 'Mariana', text: 'Oi! Vi o anúncio de vocês. Ainda tem horário essa semana?', time: '09:12' },
   { name: 'Carlos', text: 'Quero um orçamento. Vocês atendem empresa?', time: '09:47' },
-  { name: 'Júlia', text: 'Minha amiga indicou o Instagram de vocês 😊', time: '10:05' },
   { name: 'Rafael', text: 'Consigo fechar ainda hoje?', time: '10:31' },
 ];
 
