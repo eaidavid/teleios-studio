@@ -1,3 +1,5 @@
+import { hexToHsl, hslToHex } from '../sites/colors';
+
 // Dados de DEMONSTRAÇÃO: empresas, pessoas e números fictícios.
 // Serão substituídos pelo que o Caçador (scraper) trouxer de verdade.
 
@@ -31,6 +33,11 @@ const BAIRROS = ['Campolim', 'Centro', 'Jardim Vergueiro', 'Santa Rosália', 'Ma
 const FIRST = ['Renata', 'Carla', 'Marcos', 'Jorge', 'Lívia', 'Diego', 'Paulo', 'Rafa', 'Sônia', 'Ana', 'Paula', 'Bruno', 'Camila', 'Felipe', 'Juliana', 'Ricardo', 'Tatiane', 'Eduardo'];
 const ROLES = ['proprietária', 'sócio', 'gerente', 'dono', 'sócia', 'gestor', 'recepção'];
 const TAGS = ['Premium', 'Indicação', 'Urgente', 'Recorrente', 'Grande porte', 'Sem site'];
+
+function shift(hex, dh) {
+  const [h, sat, l] = hexToHsl(hex);
+  return hslToHex((h + dh + 360) % 360, sat, l);
+}
 
 function slug(t) {
   return t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/&/g, 'e').replace(/[^a-z0-9]+/g, '');
@@ -80,6 +87,8 @@ export function makeLead(id, overrides = {}) {
     x: 0.08 + rnd() * 0.84,
     y: 0.1 + rnd() * 0.8,
     palette: c.palette,
+    // Cores de marca detectadas no site/Instagram (no backend: lidas do logo e do CSS do site)
+    brand: hasSite || hasIg ? { source: hasSite ? 'site' : 'instagram', colors: [shift(c.palette[2], int(-14, 14)), shift(c.palette[1], int(-10, 10))] } : null,
     notes: [],
     analysis: null,
     ...overrides,
@@ -100,6 +109,7 @@ export function seedLeads() {
   Object.assign(list[0], { name: 'Clínica Aurora Estética', category: 'Clínica de estética', contact: 'Renata, proprietária', stage: 'reply', rating: 4.8, reviews: 213, website: '', site: null, palette: CATEGORIES['Clínica de estética'].palette, blocked: '' });
   Object.assign(list[1], { name: 'Academia Força Total', category: 'Academia', contact: 'Rafa, gestor', stage: 'reply', rating: 4.4, reviews: 322, unanswered: 64, palette: CATEGORIES.Academia.palette, blocked: '' });
   Object.assign(list[2], { name: 'Ótica Visão Clara', category: 'Ótica', contact: 'Marcos, gerente', stage: 'reply', palette: CATEGORIES['Ótica'].palette, social: { followers: 1840, lastPostDays: 47, postsPerWeek: 0.3 }, instagram: '@oticavisaoclara', blocked: '' });
+  list.slice(0, 3).forEach((l) => { l.brand = { source: 'instagram', colors: [l.palette[2], l.palette[1]] }; });
   return list;
 }
 

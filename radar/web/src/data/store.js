@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { analyze } from './analysis';
 import { makeLead, seedBots, seedCampaigns, seedConversations, seedLeads, seedSettings } from './seed';
 
-const KEY = 'teleios-radar-v2';
+const KEY = 'teleios-radar-v3';
 
 function fresh() {
   const leads = seedLeads().map((l, i) => (i < 40 ? { ...l, analysis: analyze(l) } : l));
