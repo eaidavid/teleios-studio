@@ -1,0 +1,48 @@
+# Coolify: crie um recurso "Docker Compose" apontando para radar/docker-compose.yml
+# e preencha as variáveis em Environment Variables (nunca no repositório).
+services:
+  radar:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://radar:${POSTGRES_PASSWORD}@db:5432/radar
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-eaidaviddev@gmail.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MCP_TOKEN: ${MCP_TOKEN}
+      PUBLIC_URL: ${PUBLIC_URL:-https://radar.agenciateleios.com.br}
+      PREVIEW_URL: ${PREVIEW_URL:-https://radar.agenciateleios.com.br/p}
+      SCRAPER_URL: http://google-maps-scraper:8080
+    volumes:
+      - radar-data:/data   # sessão do WhatsApp (não apaga ao atualizar)
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "3000"
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: radar
+      POSTGRES_DB: radar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - radar-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U radar"]
+      interval: 5s
+      retries: 10
+
+  # Caçador: gosom/google-maps-scraper (MIT), só acessível por dentro
+  google-maps-scraper:
+    image: gosom/google-maps-scraper:latest
+    restart: unless-stopped
+    command: ["-web", "-data-folder", "/gmapsdata"]
+    volumes:
+      - gmaps-data:/gmapsdata
+
+volumes:
+  radar-data:
+  radar-db:
+  gmaps-data:

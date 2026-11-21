@@ -1,0 +1,64 @@
+/* Teleios Motion Kit — animações das prévias (mesma linguagem do construtor e do site da agência).
+   Uso: <link rel="stylesheet" href="/kit/motion.css"><script src="/kit/motion.js" defer></script>
+   e marque os elementos com atributos data-*. Veja /kit/LEIA.md */
+:root { --tm-ease: cubic-bezier(.2, .8, .2, 1); --tm-dur: .9s; }
+html.tm-js [data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity var(--tm-dur) var(--tm-ease), transform var(--tm-dur) var(--tm-ease), filter var(--tm-dur) var(--tm-ease); transition-delay: var(--tm-delay, 0s); }
+html.tm-js [data-reveal="left"] { transform: translateX(-40px); }
+html.tm-js [data-reveal="right"] { transform: translateX(40px); }
+html.tm-js [data-reveal="zoom"] { transform: scale(.92); }
+html.tm-js [data-reveal="blur"] { transform: none; filter: blur(14px); }
+html.tm-js [data-reveal="flip"] { transform: perspective(900px) rotateX(18deg) translateY(30px); transform-origin: 50% 100%; }
+html.tm-js [data-reveal].tm-in { opacity: 1; transform: none; filter: none; }
+
+/* Texto dividido: linhas, palavras ou letras sobem por máscara */
+.tm-mask { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .08em; margin-bottom: -.08em; }
+.tm-piece { display: inline-block; transform: translateY(110%); transition: transform 1s var(--tm-ease); transition-delay: calc(var(--i) * var(--tm-step, 70ms) + var(--tm-delay, 0s)); }
+[data-split="chars"] .tm-piece { --tm-step: 28ms; }
+.tm-in .tm-piece, .tm-in.tm-piece { transform: none; }
+.tm-word { display: inline-block; white-space: nowrap; }
+
+/* Palavras que acendem com a rolagem (manifesto) */
+[data-scrub-words] .tm-sw { opacity: .18; transition: opacity .25s linear; }
+[data-scrub-words] .tm-sw.on { opacity: 1; }
+
+/* Faixa infinita */
+[data-marquee] { overflow: hidden; display: flex; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+[data-marquee] > .tm-track { display: flex; flex: none; gap: var(--tm-gap, 48px); padding-right: var(--tm-gap, 48px); animation: tm-marquee var(--tm-speed, 28s) linear infinite; }
+[data-marquee="reverse"] > .tm-track { animation-direction: reverse; }
+[data-marquee]:hover > .tm-track { animation-play-state: paused; }
+@keyframes tm-marquee { to { transform: translateX(-100%); } }
+
+/* Sublinhado que se desenha */
+[data-draw] { background-image: linear-gradient(currentColor, currentColor); background-size: 0% .09em; background-repeat: no-repeat; background-position: 0 92%; transition: background-size 1.1s var(--tm-ease) .3s; }
+[data-draw].tm-in { background-size: 100% .09em; }
+
+/* Linha de progresso (processo) */
+[data-progress] { position: relative; }
+[data-progress]::before { content: ''; position: absolute; left: var(--tm-line-x, 15px); top: 0; bottom: 0; width: 2px; background: currentColor; opacity: .15; }
+[data-progress]::after { content: ''; position: absolute; left: var(--tm-line-x, 15px); top: 0; width: 2px; height: calc(var(--tm-p, 0) * 100%); background: var(--tm-accent, currentColor); }
+
+/* Cartões que grudam e empilham */
+[data-stack] > * { position: sticky; top: calc(var(--tm-top, 90px) + var(--i, 0) * 18px); }
+
+/* Botão magnético e preenchimento de baixo para cima */
+[data-magnetic] { transition: transform .4s var(--tm-ease); will-change: transform; }
+[data-fill] { position: relative; overflow: hidden; isolation: isolate; }
+[data-fill]::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--tm-fill, rgba(255,255,255,.18)); transform: translateY(101%); transition: transform .45s var(--tm-ease); }
+[data-fill]:hover::before { transform: none; }
+
+/* Imagem que revela por cortina */
+html.tm-js [data-curtain] { clip-path: inset(0 0 100% 0); transition: clip-path 1.2s var(--tm-ease); transition-delay: var(--tm-delay, 0s); }
+html.tm-js [data-curtain].tm-in { clip-path: inset(0 0 0 0); }
+[data-curtain] img { transform: scale(1.15); transition: transform 1.6s var(--tm-ease); }
+[data-curtain].tm-in img { transform: none; }
+
+/* Hover de imagem: zoom leve */
+[data-zoom] { overflow: hidden; }
+[data-zoom] img { transition: transform .9s var(--tm-ease); }
+[data-zoom]:hover img { transform: scale(1.05); }
+
+@media (prefers-reduced-motion: reduce) {
+  html.tm-js [data-reveal], html.tm-js [data-curtain], .tm-piece, [data-scrub-words] .tm-sw { opacity: 1 !important; transform: none !important; filter: none !important; clip-path: none !important; transition: none !important; }
+  [data-marquee] > .tm-track { animation: none; }
+  [data-draw] { background-size: 100% .09em; }
+}
