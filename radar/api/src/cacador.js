@@ -110,6 +110,9 @@ function fromGoogle(r, campaign) {
       hours: typeof r.open_hours === 'string' ? r.open_hours.slice(0, 80) : '',
       lat: num(r.latitude), lng: num(r.longitude),
       mapsUrl: r.link || '',
+      status: r.status || '',
+      priceRange: r.price_range || '',
+      about: typeof r.descriptions === 'string' ? r.descriptions.slice(0, 400) : '',
       tags: [], notes: [], analysis: null, blocked: '', owner: 'David',
       next: 'Na fila de abordagem',
       palette: CATEGORIES[category]?.palette || ['#F2EFE9', '#14181D', '#00C48C'],
@@ -120,22 +123,62 @@ function fromGoogle(r, campaign) {
 }
 
 /* ---------- gosom: cria o trabalho e espera ---------- */
-async function gosomCreate({ keyword, lang = 'pt', depth = 1, email = true, maxTime = 600 }) {
-  // Versão web clássica do projeto
-  let res = await fetch(`${SCRAPER()}/api/v1/jobs`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ name: keyword, keywords: [keyword], lang, depth, email, max_time: maxTime, zoom: 15 }),
-  });
+/* Variações de busca: o Google Maps responde diferente para cada termo */
+const VARIANTS = {
+  'Móveis planejados': ['móveis planejados', 'marcenaria', 'móveis sob medida', 'loja de móveis planejados', 'cozinha planejada'],
+  'Clínica de estética': ['clínica de estética', 'estética facial', 'harmonização facial', 'depilação a laser', 'spa estética'],
+  Odontologia: ['dentista', 'clínica odontológica', 'implante dentário', 'ortodontia'],
+  Academia: ['academia', 'crossfit', 'studio de treino', 'academia de musculação'],
+  Restaurante: ['restaurante', 'pizzaria', 'hamburgueria', 'self service', 'restaurante delivery'],
+  'Pet shop': ['pet shop', 'banho e tosa', 'clínica veterinária', 'veterinário'],
+  Ótica: ['ótica', 'óculos de grau', 'exame de vista'],
+  Advocacia: ['advogado', 'escritório de advocacia', 'advogado trabalhista'],
+  Barbearia: ['barbearia', 'barbeiro'],
+  Fisioterapia: ['fisioterapia', 'pilates', 'clínica de fisioterapia', 'RPG fisioterapia'],
+  Imobiliária: ['imobiliária', 'corretor de imóveis', 'imóveis à venda'],
+};
+export function keywordsFor(c) {
+  const city = c.city ? ` em ${c.city}` : '';
+  const base = (c.query || '').trim();
+  const list = [base, ...(VARIANTS[c.category] || []).map((v) => `${v}${city}`)].filter(Boolean);
+  const seen = new Set();
+  return list.filter((k) => { const n = k.toLowerCase(); if (seen.has(n)) return false; seen.add(n); return true; }).slice(0, Number(c.variants) || 5);
+}
+
+/* Centro da cidade (OpenStreetMap/Nominatim), para o Maps buscar no lugar certo */
+const geoCache = new Map();
+export async function geocode(city) {
+  if (!city) return null;
+  if (geoCache.has(city)) return geoCache.get(city);
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&city=${encodeURIComponent(city)}`, { headers: { 'user-agent': UA, 'accept-language': 'pt-BR' } });
+    const [hit] = await r.json();
+    const g = hit ? { lat: Number(hit.lat), lon: Number(hit.lon) } : null;
+    geoCache.set(city, g);
+    return g;
+  } catch { return null; }
+}
+
+async function gosomCreate({ keywords, lang = 'pt', depth = 10, email = true, maxTime = 1500, geo }) {
+  // Versão web clássica do projeto: aceita várias palavras-chave num só trabalho
+  const body = { name: keywords[0], keywords, lang, depth, email, max_time: maxTime, zoom: 13 };
+  if (geo) Object.assign(body, { lat: String(geo.lat), lon: String(geo.lon), radius: 15000 });
+  let res = await fetch(`${SCRAPER()}/api/v1/jobs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   if (res.ok) { const j = await res.json(); return { id: j.id || j.job_id, api: 'jobs' }; }
-  // Versão nova (POST /api/v1/scrape)
-  res = await fetch(`${SCRAPER()}/api/v1/scrape`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ keyword, lang, max_depth: depth, email, timeout: Math.min(maxTime, 300) }),
-  });
+  // Versão nova (POST /api/v1/scrape): uma palavra-chave por trabalho, usamos a principal
+  const nb = { keyword: keywords[0], lang, max_depth: depth, email, timeout: 300 };
+  if (geo) Object.assign(nb, { geo_coordinates: `${geo.lat},${geo.lon}`, zoom: 13, radius: 15 });
+  res = await fetch(`${SCRAPER()}/api/v1/scrape`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(nb) });
   if (!res.ok) throw new Error(`O Caçador (Google Maps) não aceitou o trabalho: HTTP ${res.status}`);
   const j = await res.json();
   return { id: j.job_id || j.id, api: 'scrape' };
 }
+
+const distKm = (a, b) => {
+  const R = 6371, t = (x) => (x * Math.PI) / 180;
+  const dLat = t(b.lat - a.lat), dLon = t(b.lon - a.lon);
+  return 2 * R * Math.asin(Math.sqrt(Math.sin(dLat / 2) ** 2 + Math.cos(t(a.lat)) * Math.cos(t(b.lat)) * Math.sin(dLon / 2) ** 2));
+};
 
 async function gosomWait(job, onTick) {
   const deadline = Date.now() + 40 * 60e3;
@@ -221,6 +264,12 @@ export async function enrich(data) {
     const ig = html.match(/instagram\.com\/([a-z0-9_.]{2,30})/i)?.[1];
     const mail = html.match(/mailto:([^"'?>\s]+)/i)?.[1] || html.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i)?.[0];
     const colors = brandColors(html);
+    const abs = (u) => { try { return new URL(u.replace(/&amp;/g, '&'), res.url).href; } catch { return null; } };
+    const og = [...html.matchAll(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/gi)].map((m) => abs(m[1]));
+    const imgs = [...html.matchAll(/<img[^>]+(?:data-src|src)=["']([^"']+\.(?:jpe?g|webp|png)(?:\?[^"']*)?)["']/gi)].map((m) => abs(m[1]))
+      .filter((u) => u && !/logo|icon|sprite|avatar|whats|favicon|banner-?pix|payment|selo|badge/i.test(u));
+    const sitePhotos = [...new Set([...og, ...imgs].filter(Boolean))].slice(0, 10);
+    const logo = abs(html.match(/<img[^>]+(?:src)=["']([^"']*logo[^"']*)["']/i)?.[1] || '') || null;
     return {
       ...data,
       instagram: data.instagram || (ig && !['p', 'reel', 'explore', 'accounts'].includes(ig.toLowerCase()) ? `@${ig}` : ''),
@@ -231,7 +280,8 @@ export async function enrich(data) {
         booking: /wa\.me|api\.whatsapp|agend|booking|calendly/i.test(html),
         https: res.url.startsWith('https://'),
       },
-      brand: colors.length ? { source: 'site', colors } : data.brand,
+      brand: colors.length ? { source: 'site', colors, logo } : (logo ? { ...(data.brand || {}), logo } : data.brand),
+      sitePhotos,
     };
   } catch {
     return { ...data, site: { mobile: false, speed: 10, booking: false, https: false, offline: true } };
@@ -260,11 +310,24 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
         items = await osmSearch(campaign.category, campaign.city);
       } else {
         st.step = 'buscando no Google Maps';
-        const job = resumeJob || await gosomCreate({ keyword: campaign.query, depth: Number(campaign.depth) || 1 });
+        const geo = await geocode(campaign.city);
+        const keywords = keywordsFor(campaign);
+        st.keywords = keywords;
+        const job = resumeJob || await gosomCreate({ keywords, depth: Number(campaign.depth) || 10, geo });
         // guarda o trabalho: se o servidor reiniciar, a busca continua de onde parou
         await saveHunt(id, { huntJob: { ...job, engine, startedAt: st.startedAt } });
         const rows = await gosomWait(job, (s) => { st.step = `Google Maps: ${s === 'working' ? 'buscando empresas' : s}`; });
-        items = rows.map((r) => fromGoogle(r, campaign));
+        const all = rows.map((r) => fromGoogle(r, campaign));
+        // tira repetidos (o mesmo lugar aparece em várias palavras-chave), fechados e quem está longe demais
+        const seen = new Set();
+        const radius = Number(campaign.radiusKm) || 30;
+        items = all.filter((it) => {
+          if (seen.has(it.placeKey)) return false; seen.add(it.placeKey);
+          if (/fechado permanentemente|permanently closed/i.test(it.data.status || '')) return false;
+          if (geo && it.data.lat && it.data.lng && distKm(geo, { lat: it.data.lat, lon: it.data.lng }) > radius) { st.far = (st.far || 0) + 1; return false; }
+          return true;
+        });
+        st.raw = all.length;
       }
       st.found = items.length; st.total = items.length; st.phase = 'sites';
       const ai = await kvGet('settings', {});

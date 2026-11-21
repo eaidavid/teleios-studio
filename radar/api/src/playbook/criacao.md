@@ -17,7 +17,9 @@ Não é copiar o visual da Teleios (escuro + verde). É copiar o **rigor**:
 ## 2. Pesquisa antes de criar (obrigatório)
 Chame `ver_lead` e use:
 - `brandName` (nome limpo) para títulos. Nunca use o nome bruto do Google com descrição colada.
-- `photos`: fotos reais da empresa no Google Maps. **Prioridade máxima.**
+- `photos`: fotos reais da empresa no Google Maps e `sitePhotos`: fotos do site da própria empresa. **Prioridade máxima.**
+- `brand.logo`: logo encontrado no site (use se tiver boa qualidade; senão crie o logotipo tipográfico).
+- `about`, `priceRange`: descrição e faixa de preço do Google, quando houver.
 - `rating`, `reviews`, `reviewSamples`: só números e frases reais.
 - `neighborhood`, `city`, `hours`, `phone`, `instagram`, `website`, `googleCategory`.
 - `brand.colors`: cores tiradas do site/Instagram do cliente.

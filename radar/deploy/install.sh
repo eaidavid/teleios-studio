@@ -4,7 +4,7 @@
 # Rodar de novo é seguro: atualiza o código e mantém senhas e banco.
 set -euo pipefail
 
-BRANCH="${BRANCH:-ccr-aa220f15-9xp90c}"
+BRANCH="${BRANCH:-main}"
 DOMAIN="${DOMAIN:-radar.agenciateleios.com.br}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-eaidaviddev@gmail.com}"
 DIR=/opt/teleios-radar
@@ -78,6 +78,14 @@ done
 [ "${OK:-0}" = 1 ] || { echo "O Radar não respondeu. Veja: docker compose -p teleios-radar logs radar --tail 80"; exit 1; }
 
 set -a; . ./.env; set +a
+# Atualização automática (cron): confere a branch a cada 5 minutos
+echo "$BRANCH" > "$DIR/.radar-branch"
+if [ "${AUTO_UPDATE:-1}" = 1 ] && [ ! -f /etc/cron.d/teleios-radar ]; then
+  echo "*/5 * * * * root bash $DIR/radar/deploy/auto-update.sh >> /var/log/teleios-radar-update.log 2>&1" > /etc/cron.d/teleios-radar
+  chmod 644 /etc/cron.d/teleios-radar
+  echo "Atualização automática ligada (branch $BRANCH, a cada 5 minutos). Para desligar: rm /etc/cron.d/teleios-radar"
+fi
+
 say "Pronto"
 echo "Painel:    https://$DOMAIN"
 echo "Login:     $ADMIN_EMAIL"

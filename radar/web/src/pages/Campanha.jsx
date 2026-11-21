@@ -51,6 +51,8 @@ function HuntCard({ c, live }) {
           <div><strong className="tnum">{h.added || 0}</strong><small>novas no funil</small></div>
         </div>
       )}
+      {h?.keywords?.length > 0 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{h.keywords.map((k) => <span key={k} className="tag">{k}</span>)}</div>}
+      {h?.state === 'done' && h.raw > 0 && <p className="faint" style={{ margin: 0, fontSize: 12 }}>{h.raw} resultados brutos · repetidos removidos{h.far ? ` · ${h.far} fora do raio descartados` : ''}</p>}
       {running && h.phase !== 'sites' && <p className="faint" style={{ margin: 0, fontSize: 12 }}>O Google Maps leva de 3 a 15 minutos, conforme o tamanho da cidade. Pode sair desta tela; a busca continua no servidor.</p>}
     </section>
   );

@@ -263,14 +263,16 @@ function buildServer() {
       segmento: z.enum(Object.keys(CATEGORIES)).optional(),
       filtros: z.array(z.string()).optional().describe('Ex.: "Sem site", "Nota ≥ 4,5", "Com WhatsApp"'),
       buscar_agora: z.boolean().optional(),
+      profundidade: z.number().int().min(3).max(30).optional().describe('Rolagem na lista do Maps: 10 normal, 20 completa'),
+      raio_km: z.number().int().min(3).max(200).optional(),
       motor: z.enum(['google', 'osm']).optional().describe('google (padrão, mais dados) ou osm (gratuito)'),
     },
-  }, async ({ nome, busca, cidade, segmento, filtros = [], buscar_agora, motor = 'google' }) => {
-    const { rows } = await q('insert into campaigns(data) values ($1) returning id', [{ name: nome, query: busca, city: cidade, category: segmento, filters: filtros, status: 'running', variantA: '', variantB: '' }]);
+  }, async ({ nome, busca, cidade, segmento, filtros = [], buscar_agora, motor = 'google', profundidade = 10, raio_km = 30 }) => {
+    const { rows } = await q('insert into campaigns(data) values ($1) returning id', [{ name: nome, query: busca, city: cidade, category: segmento, filters: filtros, depth: profundidade, radiusKm: raio_km, variants: 5, status: 'running', variantA: '', variantB: '' }]);
     const id = rows[0].id;
     let busca_status = 'não iniciada';
     if (buscar_agora) {
-      try { await hunt({ id, name: nome, query: busca, city: cidade, category: segmento }, { engine: motor, log: (t) => logActivity('cacador', t) }); busca_status = 'rodando (leva alguns minutos; acompanhe com status_busca)'; } catch (e) { busca_status = `não iniciou: ${e.message}`; }
+      try { await hunt({ id, name: nome, query: busca, city: cidade, category: segmento, depth: profundidade, radiusKm: raio_km, variants: 5 }, { engine: motor, log: (t) => logActivity('cacador', t) }); busca_status = 'rodando (leva alguns minutos; acompanhe com status_busca)'; } catch (e) { busca_status = `não iniciou: ${e.message}`; }
     }
     return text({ campanha_id: id, busca: busca_status });
   });
