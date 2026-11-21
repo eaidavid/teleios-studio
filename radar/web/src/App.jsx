@@ -15,6 +15,7 @@ import Conversas from './pages/Conversas';
 import Funil from './pages/Funil';
 import Territorio from './pages/Territorio';
 import Campanhas from './pages/Campanhas';
+import Campanha from './pages/Campanha';
 import Sites from './pages/Sites';
 import Robos from './pages/Robos';
 import Config from './pages/Config';
@@ -35,7 +36,9 @@ const NAV = [
   ] },
   { group: 'Conta', items: [{ id: 'config', label: 'Configurações', icon: Settings, el: Config }] },
 ];
-const ALL = NAV.flatMap((g) => g.items);
+// Telas fora do menu (abertas a partir de outra): a tela de uma campanha
+const HIDDEN = [{ id: 'campanha', el: Campanha, parent: 'campanhas' }];
+const ALL = [...NAV.flatMap((g) => g.items), ...HIDDEN];
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -88,6 +91,7 @@ function Shell({ session }) {
 
   const app = useMemo(() => ({ openLead: setLead, newLead: (data = {}) => setForm(data), editLead: (l) => setForm(l), go: (v) => { location.hash = v; }, param }), [param]);
   const Page = ALL.find((x) => x.id === view).el;
+  const navView = ALL.find((x) => x.id === view).parent || view;
 
   return (
     <Ctx.Provider value={app}>
@@ -98,8 +102,8 @@ function Shell({ session }) {
             <nav key={g.group} className="nav-group" aria-label={g.group}>
               <div className="nav-title">{g.group}</div>
               {g.items.map(({ id, label, icon: Icon, badge, beta }) => (
-                <a key={id} href={`#${id}`} className={`nav-link ${view === id ? 'active' : ''}`} aria-current={view === id ? 'page' : undefined}>
-                  {view === id && <motion.span layoutId="nav-pill" className="nav-pill" transition={{ duration: 0.4, ease }} />}
+                <a key={id} href={`#${id}`} className={`nav-link ${navView === id ? 'active' : ''}`} aria-current={navView === id ? 'page' : undefined}>
+                  {navView === id && <motion.span layoutId="nav-pill" className="nav-pill" transition={{ duration: 0.4, ease }} />}
                   <Icon size={18} strokeWidth={1.8} />{label}
                   {badge && hot > 0 && <span className="badge">{hot}</span>}
                   {beta && <span className="pill violet" style={{ marginLeft: 'auto', height: 18, fontSize: 10 }}>Beta</span>}
@@ -133,7 +137,7 @@ function Shell({ session }) {
 
       <LeadDrawer id={lead} onClose={() => setLead(null)} />
       <LeadForm value={form} onClose={() => setForm(null)} />
-      <CommandPalette open={palette} onClose={() => setPalette(false)} nav={ALL} />
+      <CommandPalette open={palette} onClose={() => setPalette(false)} nav={ALL.filter((x) => x.label)} />
       <Toasts />
     </Ctx.Provider>
   );

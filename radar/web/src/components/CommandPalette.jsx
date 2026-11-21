@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, CornerDownLeft, Plus, Search, Sparkles } from 'lucide-react';
-import { useStore } from '../data/store';
+import { ArrowRight, CornerDownLeft, Plus, Search, Sparkles, Target } from 'lucide-react';
+import { getState, useStore } from '../data/store';
 import { useApp } from '../App';
 import { Avatar, ease } from './ui';
 
@@ -20,13 +20,14 @@ export default function CommandPalette({ open, onClose, nav }) {
       { group: 'Ações', label: 'Criar lead', icon: <Plus size={16} />, run: () => app.newLead({}) },
       { group: 'Ações', label: 'Nova campanha de busca', icon: <Sparkles size={16} />, run: () => app.go('campanhas-nova') },
     ];
+    const camps = getState().campaigns.map((c) => ({ group: 'Campanhas', label: c.name, icon: <Target size={16} />, run: () => app.go(`campanha-${c.id}`) }));
     const pages = nav.map((n) => ({ group: 'Telas', label: n.label, icon: <n.icon size={16} />, run: () => app.go(n.id) }));
     const ls = leads
       .filter((l) => !t || `${l.name} ${l.category} ${l.neighborhood} ${l.contact}`.toLowerCase().includes(t))
       .slice(0, t ? 8 : 4)
       .map((l) => ({ group: 'Leads', label: l.name, hint: `${l.category} · ${l.neighborhood}`, icon: <Avatar name={l.name} size="sm" />, run: () => app.openLead(l.id) }));
     const f = (x) => !t || x.label.toLowerCase().includes(t);
-    return [...ls, ...pages.filter(f), ...acts.filter(f)];
+    return [...ls, ...camps.filter(f).slice(0, t ? 5 : 3), ...pages.filter(f), ...acts.filter(f)];
   }, [q, leads, nav, app]);
 
   const run = (it) => { onClose(); setTimeout(it.run, 60); };

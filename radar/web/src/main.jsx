@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { MotionConfig } from 'framer-motion';
 import App from './App';
 import './styles/app.css';
+import { installClickFx } from './components/clickFx';
+
+installClickFx();
 
 createRoot(document.getElementById('root')).render(
   <MotionConfig reducedMotion="user">

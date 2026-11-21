@@ -212,11 +212,13 @@ const running = new Map(); // campaignId -> status
 
 export function huntStatus(id) { return running.get(Number(id)) || null; }
 
-export async function hunt(campaign, { engine = 'google', log = () => {} } = {}) {
+const saveHunt = (id, patch) => q("update campaigns set data = data || $2 where id = $1", [id, patch]);
+
+export async function hunt(campaign, { engine = 'google', log = () => {}, resumeJob = null, startedAt = null } = {}) {
   const id = Number(campaign.id);
   if (running.get(id)?.state === 'running') throw new Error('Essa campanha já está buscando.');
   if ([...running.values()].some((r) => r.state === 'running')) throw new Error('Outra busca está rodando. Uma por vez, para manter o ritmo seguro.');
-  const st = { state: 'running', engine, step: 'iniciando', found: 0, added: 0, startedAt: Date.now() };
+  const st = { state: 'running', engine, phase: 'busca', step: 'iniciando', found: 0, added: 0, read: 0, total: 0, startedAt: startedAt || Date.now() };
   running.set(id, st);
 
   (async () => {
@@ -227,31 +229,44 @@ export async function hunt(campaign, { engine = 'google', log = () => {} } = {})
         items = await osmSearch(campaign.category, campaign.city);
       } else {
         st.step = 'buscando no Google Maps';
-        const job = await gosomCreate({ keyword: campaign.query, depth: Number(campaign.depth) || 1 });
-        const rows = await gosomWait(job, (s) => { st.step = `Google Maps: ${s}`; });
+        const job = resumeJob || await gosomCreate({ keyword: campaign.query, depth: Number(campaign.depth) || 1 });
+        // guarda o trabalho: se o servidor reiniciar, a busca continua de onde parou
+        await saveHunt(id, { huntJob: { ...job, engine, startedAt: st.startedAt } });
+        const rows = await gosomWait(job, (s) => { st.step = `Google Maps: ${s === 'working' ? 'buscando empresas' : s}`; });
         items = rows.map((r) => fromGoogle(r, campaign));
       }
-      st.found = items.length;
+      st.found = items.length; st.total = items.length; st.phase = 'sites';
       const ai = await kvGet('settings', {});
       for (const [i, it] of items.entries()) {
+        st.read = i + 1;
         st.step = `lendo sites (${i + 1}/${items.length})`;
         const exists = await q('select 1 from leads where place_key = $1', [it.placeKey]);
         if (exists.rows.length) continue;
-        let data = await enrich(it.data);
+        const data = await enrich(it.data);
         if (ai?.ai?.analyzeOnFind !== false) data.analysis = analyze(data);
         data.campaign = id;
         await q('insert into leads(stage, campaign_id, place_key, data) values ($1, $2, $3, $4) on conflict (place_key) do nothing', ['found', id, it.placeKey, data]);
         st.added++;
         await new Promise((r) => setTimeout(r, 400));
       }
-      st.state = 'done'; st.step = 'concluído';
+      st.state = 'done'; st.phase = 'fim'; st.step = 'concluído'; st.endedAt = Date.now();
       log(`achou ${st.found} empresas para "${campaign.name}"; ${st.added} novas no funil`);
     } catch (e) {
-      st.state = 'error'; st.step = e.message;
+      st.state = 'error'; st.step = e.message; st.endedAt = Date.now();
       log(`não conseguiu buscar "${campaign.name}": ${e.message}`);
     }
+    await saveHunt(id, { huntJob: null, lastHunt: { ...st } }).catch(() => {});
   })();
   return st;
+}
+
+/* Ao subir o servidor: retoma buscas que estavam no meio */
+export async function resumeHunts(log) {
+  const { rows } = await q("select * from campaigns where data->'huntJob' is not null and data->>'huntJob' <> 'null'");
+  for (const r of rows) {
+    const job = r.data.huntJob;
+    try { await hunt({ ...r.data, id: r.id }, { engine: job.engine || 'google', resumeJob: job, startedAt: job.startedAt, log }); } catch { /* outra já rodando */ }
+  }
 }
 
 export { leadRow };

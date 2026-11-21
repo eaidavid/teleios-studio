@@ -54,7 +54,7 @@ export default function Campanhas() {
                 <motion.article key={c.id} className="card camp" variants={itemAnim} layout exit={{ opacity: 0, scale: 0.96 }}>
                   <div className="camp-h">
                     <span className="kpi-ic" style={{ background: 'rgba(0,196,140,.12)', color: 'var(--green)' }}><Target size={16} /></span>
-                    <div className="grow"><b>{c.name}</b><span className="faint" style={{ fontSize: 12, display: 'inline-flex', gap: 4, alignItems: 'center' }}><MapPin size={11} />{c.city} · criada {ago(c.createdAt)}</span></div>
+                    <div className="grow"><a className="camp-name" href={`#campanha-${c.id}`}>{c.name}</a><span className="faint" style={{ fontSize: 12, display: 'inline-flex', gap: 4, alignItems: 'center' }}><MapPin size={11} />{c.city} · criada {ago(c.createdAt)}</span></div>
                     {c.status === 'running' ? <span className="pill ok live"><i />Rodando</span> : <span className="pill">Pausada</span>}
                   </div>
                   <q>{c.query}</q>
@@ -72,6 +72,7 @@ export default function Campanhas() {
                     {live && <button type="button" className="btn btn-primary btn-sm" disabled={c.hunt?.state === 'running'} onClick={() => huntNow(c, 'google')} title="Google Maps (gosom)"><Radar size={13} />Buscar agora</button>}
                     {live && <button type="button" className="btn btn-ghost btn-sm" disabled={c.hunt?.state === 'running'} onClick={() => huntNow(c, 'osm')} title="OpenStreetMap: gratuito, menos dados">OSM</button>}
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => { actions.toggleCampaign(c.id); toast(c.status === 'running' ? 'Campanha pausada' : 'Campanha retomada'); }}>{c.status === 'running' ? <><Pause size={13} />Pausar</> : <><Play size={13} />Retomar</>}</button>
+                    <a className="btn btn-ghost btn-sm" href={`#campanha-${c.id}`}><Radar size={13} />Acompanhar</a>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEdit({ ...c })}><Pencil size={13} />Editar</button>
                     <span style={{ flex: 1 }} />
                     <button type="button" className="btn-icon sm" aria-label={`Excluir ${c.name}`} onClick={() => toast('Campanha excluída', actions.deleteCampaign(c.id))}><Trash2 size={14} /></button>

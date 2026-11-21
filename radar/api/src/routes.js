@@ -75,7 +75,7 @@ export function registerRoutes(app) {
     const outbox = (await q("select o.id, o.lead_id as lead, o.text, o.status, o.error, extract(epoch from o.created_at) * 1000 as at from outbox o where o.status = 'pending' or o.created_at > now() - interval '2 days' order by o.created_at desc limit 200")).rows.map((r) => ({ ...r, at: Number(r.at) }));
     return {
       leads: leads.rows.map(leadRow),
-      campaigns: campaigns.rows.map((r) => ({ ...r.data, id: r.id, createdAt: new Date(r.created_at).getTime(), hunt: huntStatus(r.id) })),
+      campaigns: campaigns.rows.map((r) => ({ ...r.data, huntJob: undefined, id: r.id, createdAt: new Date(r.created_at).getTime(), hunt: huntStatus(r.id) || r.data.lastHunt || null })),
       sites: sites.rows.map((r) => ({ ...siteRow(r), url: previewUrl(r.slug) })),
       conversations, control,
       bots: await kvGet('bots', seedBots),
@@ -155,7 +155,12 @@ export function registerRoutes(app) {
       return await hunt({ ...rows[0].data, id: rows[0].id }, { engine: req.body?.engine || 'google', log: (t) => logActivity('cacador', t) });
     } catch (e) { return reply.code(409).send({ error: e.message }); }
   });
-  app.get('/api/campaigns/:id/hunt', async (req) => huntStatus(req.params.id) || { state: 'idle' });
+  app.get('/api/campaigns/:id/hunt', async (req) => {
+    const live = huntStatus(req.params.id);
+    if (live) return live;
+    const { rows } = await q("select data->'lastHunt' as h from campaigns where id = $1", [Number(req.params.id)]);
+    return rows[0]?.h || { state: 'idle' };
+  });
 
   /* ---------- Conversas ---------- */
   const pushMsg = async (lead, msg, control) => {

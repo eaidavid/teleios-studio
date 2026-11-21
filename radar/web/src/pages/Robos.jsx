@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Inbox, PenLine, Radar, Repeat, ScanSearch, Settings2 } from 'lucide-react';
-import { actions, useStore } from '../data/store';
+import { actions, getState, useStore } from '../data/store';
+import { botLine, pipeline } from '../data/botStats';
 import { Modal, Switch, itemAnim, listAnim, toast } from '../components/ui';
 
 const ICONS = { Radar, ScanSearch, PenLine, Repeat, Inbox };
 
 export default function Robos() {
   const bots = useStore((s) => s.bots);
+  const live = useStore((s) => s.session.mode === 'api');
+  useStore((s) => s.leads); useStore((s) => s.outbox); useStore((s) => s.approvals);
+  const p = pipeline(getState());
   const [edit, setEdit] = useState(null);
   return (
     <div className="page">
@@ -25,7 +29,7 @@ export default function Robos() {
               <p>{b.desc}</p>
               <ul>{b.rules.map((r) => <li key={r}><Check size={14} />{r}</li>)}</ul>
               <div className="botc-foot">
-                <span>{b.on ? <span className="live" style={{ color: 'var(--green-hi)' }}><i />{b.stats}</span> : 'Pausado'}</span>
+                <span>{b.on ? <span className="live" style={{ color: 'var(--green-hi)' }}><i />{live ? botLine(b.id, p) : b.stats}</span> : 'Pausado'}</span>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEdit({ ...b, instructions: b.instructions || '' })}><Settings2 size={13} />Ajustar</button>
               </div>
             </motion.article>

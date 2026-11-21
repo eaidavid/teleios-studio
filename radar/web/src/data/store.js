@@ -217,6 +217,21 @@ export const actions = {
     set((s) => ({ ...s, campaigns: s.campaigns.map((x) => (x.id === id ? { ...x, status } : x)) }));
     sync(`/campaigns/${id}`, 'PATCH', { status });
   },
+  /* Acompanha uma busca ao vivo (inclusive as disparadas pelo Claude) */
+  watchHunt(id) {
+    if (!isApi()) return () => {};
+    let n = 0;
+    const t = setInterval(async () => {
+      try {
+        const h = await api(`/campaigns/${id}/hunt`);
+        set((s) => ({ ...s, campaigns: s.campaigns.map((c) => (c.id === id ? { ...c, hunt: h } : c)) }));
+        if (h.state === 'running' && ++n % 3 === 0) refresh(); // traz os leads que vão entrando
+        if (h.state !== 'running' && n % 6 === 0) refresh();
+        n += h.state === 'running' ? 0 : 1;
+      } catch { /* tenta de novo */ }
+    }, 4000);
+    return () => clearInterval(t);
+  },
   /* Caçador: só no servidor */
   async hunt(id, engine = 'google') {
     if (!isApi()) throw new Error('A busca real roda no servidor. Aqui é só demonstração.');
