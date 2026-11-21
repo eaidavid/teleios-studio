@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { actions, useStore } from '../data/store';
 import { AskClaude } from '../components/ClaudeQueue';
+import BriefButton from '../components/BriefButton';
 import { useApp } from '../App';
 import { Avatar, Segmented, ease, toast } from '../components/ui';
 import Preview from '../sites/Preview';
@@ -46,12 +47,18 @@ export default function Sites() {
   const [replay, setReplay] = useState(0);
   useEffect(() => { setMode(sites.some((s) => s.lead === leadId) ? 'edit' : 'empty'); }, [leadId, sites.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const d = site?.data;
+  const claude = !!site?.hasHtml;
+  const d = claude ? null : site?.data;
   const save = (data, extra = {}) => actions.saveSite({ ...site, lead: leadId, data, ...extra });
   const set = (patch) => save({ ...d, ...patch });
   const setAnim = (patch) => { set(patch); setReplay((r) => r + 1); };
 
+  const live = useStore((s) => s.session.mode === 'api');
   const create = (dir) => {
+    if (live) {
+      // no servidor, a direção vira um site no motor premium (mesmo acabamento das prévias do Claude)
+      return actions.buildPremium(leadId, dir).then(() => { setMode('edit'); toast('Site montado no motor premium. Ajuste pelo Claude ou monte o MD.'); }, (e) => toast(e.message));
+    }
     actions.saveSite({ id: site?.id, lead: leadId, direction: dir, data: generateDesign(lead, dir) });
     setMode('edit');
     setReplay((r) => r + 1);
@@ -87,6 +94,8 @@ export default function Sites() {
         )}
       </div>
 
+      {lead && mode === 'edit' && claude && <ClaudeSite site={site} lead={lead} picker={leadPicker} />}
+
       {lead && mode !== 'edit' && (
         <div className="card" style={{ padding: 16, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
           <Avatar name={lead.name} size="lg" />
@@ -103,8 +112,9 @@ export default function Sites() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             <button type="button" className="btn btn-primary" onClick={() => setMode('wizard')}><Sparkles size={15} />Montar no construtor</button>
             <AskClaude kind="previa" leads={[lead.id]} label="Pedir ao Claude" className="btn btn-ghost" />
+            <BriefButton lead={lead} className="btn btn-ghost" />
           </div>
-          <small className="faint">O Claude cria quando você disser no chat dele: “Faz os pedidos do Radar”. A prévia aparece aqui para você ajustar.</small>
+          <small className="faint">Construtor: monta na hora no motor premium. Claude: entra na fila (“Faz os pedidos do Radar”) ou cole o MD no chat dele.</small>
         </motion.div>
       )}
 
@@ -164,6 +174,44 @@ export default function Sites() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* Prévia feita pelo Claude (motor premium ou HTML autoral): mostra a página real */
+function ClaudeSite({ site, lead, picker }) {
+  const [device, setDevice] = useState('desk');
+  const [note, setNote] = useState('');
+  const copy = () => navigator.clipboard?.writeText(site.url).then(() => toast('Link copiado'), () => toast('Não foi possível copiar'));
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      <div className="card" style={{ padding: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 220, display: 'grid', gap: 2 }}>
+          <b style={{ font: '600 17px var(--f-display)' }}>{lead.brandName || lead.name}</b>
+          <span className="faint" style={{ fontSize: 12.5 }}>Feita pelo Webdesigner (Claude){site.direction?.conceito ? ` · ${site.direction.conceito}` : ''}{site.sent ? ' · enviada ao lead' : ''}</span>
+        </div>
+        {picker}
+        <div className="seg" role="tablist" style={{ alignSelf: 'end' }}>
+          {[['desk', 'Computador'], ['mob', 'Celular']].map(([k, t]) => <button key={k} type="button" className={device === k ? 'on' : ''} onClick={() => setDevice(k)} style={{ padding: '8px 12px', fontWeight: device === k ? 700 : 500 }}>{t}</button>)}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <a className="btn btn-ghost" href={site.url} target="_blank" rel="noreferrer">Abrir em nova aba</a>
+        <button type="button" className="btn btn-ghost" onClick={copy}><Copy size={15} />Copiar link</button>
+        <BriefButton lead={lead} className="btn btn-ghost" label="MD para o Claude" />
+        <button type="button" className="btn btn-primary" onClick={() => { actions.markSiteSent(site); copy(); toast('Marcada como enviada. O link foi copiado para mandar no WhatsApp.'); }}><Send size={15} />Enviar ao lead</button>
+      </div>
+      <div className="preview-frame" style={{ maxWidth: device === 'mob' ? 400 : '100%', margin: '0 auto', width: '100%' }}>
+        <iframe title={`Prévia de ${lead.name}`} src={site.url} style={{ width: '100%', height: device === 'mob' ? 760 : 720, border: 0, display: 'block', background: '#fff' }} />
+      </div>
+      <div className="card" style={{ padding: 16, display: 'grid', gap: 10 }}>
+        <b>Pedir ajuste ao Webdesigner</b>
+        <textarea id="site-note" className="textarea" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex.: topo com a foto da cozinha, títulos mais ousados, trocar o tom de verde por grafite…" />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <AskClaude kind="previa" leads={[lead.id]} payload={{ observacoes: note, ajuste: true }} label="Mandar para a fila do Claude" className="btn btn-primary btn-sm" onDone={() => setNote('')} />
+          <span className="faint" style={{ fontSize: 12 }}>Depois diga ao Claude: “Faz os pedidos do Radar”.</span>
+        </div>
+      </div>
     </div>
   );
 }

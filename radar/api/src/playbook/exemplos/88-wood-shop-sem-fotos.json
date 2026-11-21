@@ -1,0 +1,50 @@
+{
+  "conceito": "Feito a quatro mãos: um casal de marceneiros que transforma qualquer ideia em madeira, à mão e no capricho (palavras dos próprios clientes).",
+  "tema": { "fundo": "#F4EEE4", "fundo_alt": "#E9DFCF", "tinta": "#2B1D14", "acento": "#A8662F",
+    "fonte_titulo": "DM Serif Display", "fonte_texto": "Work Sans", "fonte_destaque": "Instrument Serif",
+    "peso_titulo": 400, "peso_forte": 400, "raio": "suave", "motivo": "regua", "textura": "ripado", "movimento": "equilibrado" },
+  "whatsapp_texto": "Oi! Vi o site da 88 Wood Shop e queria fazer uma encomenda.",
+  "menu_cta": { "texto": "Encomendar" },
+  "secoes": [
+    { "tipo": "topo", "variante": "tipografico", "rotulo": "Loja de marcenaria · Anápolis",
+      "titulo_suave": "Tudo que você imaginar", "titulo_forte": "em madeira, <em>feito à mão.</em>",
+      "subtitulo": "Peças e móveis sob medida criados por um casal de marceneiros. Cada corte, encaixe e acabamento passa pelas mãos de quem desenhou.",
+      "cta": { "texto": "Fazer uma encomenda" }, "cta2": { "texto": "Ver o que fazemos", "link": "#pecas" } },
+    { "tipo": "numeros", "itens": [ { "valor": "5,0", "legenda": "nota no Google" }, { "valor": "144", "legenda": "clientes avaliaram" } ] },
+    { "tipo": "manifesto", "rotulo": "Nosso jeito", "texto": "Aqui não tem linha de produção. Tem um casal, uma bancada e madeira de verdade: cada peça é desenhada, cortada e lixada à mão até ficar do jeito que você imaginou." },
+    { "tipo": "dores", "rotulo": "Por que encomendar aqui", "titulo_suave": "Feito pra quem cansou", "titulo_forte": "de móvel de catálogo",
+      "itens": [
+        { "frase": "Eu queria algo exclusivo, mas só achava peça de catálogo.", "resposta": "Aqui cada peça nasce do zero, no tamanho, na madeira e no acabamento que você escolher." },
+        { "frase": "Tenho medo de encomendar e chegar diferente.", "resposta": "Você combina tudo direto com quem faz: medida, madeira e detalhe, sem intermediário." },
+        { "frase": "Estou longe, não consigo ir até a loja.", "resposta": "Clientes contam que a peça foi levada até eles. É só combinar pelo WhatsApp." }
+      ] },
+    { "tipo": "cartaz", "palavra": "Feito <em>à mão.</em>", "selo": "Nota 5,0 · 144 avaliações",
+      "topo_esquerda": "88 Wood Shop", "topo_direita": "Anápolis · GO", "base_esquerda": "Loja de marcenaria", "base_direita": "Peças únicas, sob medida" },
+    { "tipo": "empilhados", "ancora": "pecas", "menu": "Peças", "rotulo": "O que sai da bancada", "titulo_suave": "Da tábua de servir", "titulo_forte": "ao móvel da sala", "com_fotos": false,
+      "itens": [
+        { "nome": "Placas e tábuas", "texto": "Para servir, decorar ou presentear: madeira bonita, bem trabalhada e com acabamento que dura." },
+        { "nome": "Peças decorativas", "texto": "Detalhes em madeira que valorizam o ambiente e não se encontram em loja nenhuma." },
+        { "nome": "Móveis sob medida", "texto": "Do tamanho exato do seu espaço, desenhados junto com você." },
+        { "nome": "Encomendas especiais", "texto": "Trouxe uma ideia ou uma foto de referência? O casal desenha e transforma em madeira." }
+      ] },
+    { "tipo": "processo", "ancora": "como", "menu": "Como funciona", "rotulo": "Como funciona", "titulo_suave": "Da sua ideia", "titulo_forte": "à peça pronta",
+      "passos": [
+        { "titulo": "Conversa", "texto": "Você manda a ideia, as medidas ou uma foto de referência pelo WhatsApp." },
+        { "titulo": "Desenho e madeira", "texto": "Definimos juntos o tamanho, a madeira e o acabamento." },
+        { "titulo": "Feito à mão", "texto": "A peça é produzida na bancada, com cuidado em cada detalhe." },
+        { "titulo": "Entrega combinada", "texto": "Você retira ou combina a entrega, do jeito que for melhor." }
+      ] },
+    { "tipo": "depoimentos", "rotulo": "Quem já tem uma peça", "titulo_suave": "144 avaliações,", "titulo_forte": "nota 5,0" },
+    { "tipo": "faq", "titulo_suave": "Antes de", "titulo_forte": "encomendar",
+      "itens": [
+        { "pergunta": "Vocês fazem peças sob medida?", "resposta": "Sim. Os clientes contam que tudo é feito sob medida, exatamente como pediram." },
+        { "pergunta": "Posso mandar uma foto de referência?", "resposta": "Pode. A partir dela, combinamos tamanho, madeira e acabamento." },
+        { "pergunta": "Fazem entrega?", "resposta": "Combine pelo WhatsApp: há clientes que receberam a peça onde estavam." },
+        { "pergunta": "Como peço um orçamento?", "resposta": "Mande uma mensagem com a ideia e as medidas aproximadas. A conversa já começa por lá." }
+      ] },
+    { "tipo": "local", "ancora": "contato", "menu": "Contato", "rotulo": "Onde estamos", "titulo_suave": "Ateliê em", "titulo_forte": "Anápolis",
+      "texto": "Fale com a gente pelo WhatsApp para combinar uma visita ou a retirada da sua peça." },
+    { "tipo": "chamada", "rotulo": "Bora fazer a sua?", "titulo_suave": "Conta pra gente", "titulo_forte": "o que você quer em madeira.", "texto": "Respondemos pelo WhatsApp, sem compromisso.", "cta": { "texto": "Fazer uma encomenda" } }
+  ],
+  "rodape": { "frase": "Loja de marcenaria em Anápolis. Peças feitas à mão por um casal de marceneiros.", "palavra_gigante": "88 Wood" }
+}

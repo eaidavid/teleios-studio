@@ -20,6 +20,9 @@ export function analyze(lead) {
   if (!lead.website) {
     site = 95;
     gaps.push({ area: 'Site', severity: 'alta', title: 'Não tem site', detail: 'Quem pesquisa no Google não encontra uma página própria para conhecer e agendar.' });
+  } else if (lead.site?.offline) {
+    site = 55;
+    gaps.push({ area: 'Site', severity: 'media', title: 'O site não abriu na verificação', detail: 'Pode estar fora do ar ou lento demais; vale conferir antes de falar disso.' });
   } else {
     site = 15;
     if (!lead.site?.mobile) { site += 40; gaps.push({ area: 'Site', severity: 'alta', title: 'Site ruim no celular', detail: 'A maioria das visitas vem do celular e o layout quebra.' }); }
@@ -46,8 +49,10 @@ export function analyze(lead) {
   const ads = lead.ads ? 25 : 65;
   if (!lead.ads) gaps.push({ area: 'Anúncios', severity: 'baixa', title: 'Não anuncia', detail: 'Concorrentes que anunciam aparecem primeiro para quem busca na região.' });
 
-  const strength = clamp(((lead.rating - 4) / 1) * 60 + Math.min(lead.reviews, 300) / 300 * 40);
-  const opportunity = clamp((site * 0.35 + social * 0.25 + reputation * 0.2 + ads * 0.2) * (0.6 + strength / 250));
+  // Força da reputação: nota conta, mas o volume de avaliações é o que prova (5,0 com 4 avaliações vale menos que 4,8 com 140)
+  const rating = Number(lead.rating) || 0;
+  const strength = clamp(40 * Math.max(0, Math.min(1, (rating - 3.5) / 1.5)) + 60 * Math.min(1, Math.log10((lead.reviews || 0) + 1) / Math.log10(200)));
+  const opportunity = clamp((site * 0.35 + social * 0.25 + reputation * 0.2 + ads * 0.2) * (0.4 + strength / 170));
 
   const services = [];
   if (site >= 60) services.push(SERVICES.site);

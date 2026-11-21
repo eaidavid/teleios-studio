@@ -28,7 +28,7 @@ Ex.: "Nota 5,0 com clientes elogiando o acabamento, mas quem procura no Google n
 - headline: proposta de título específica (veja fórmulas do Webdesigner).
 - sub: prova real em uma linha.
 - cta: verbo + benefício.
-Inclua no `resumo`: conceito sugerido, fotos boas (quais índices de `photos`), frases de clientes aproveitáveis.
+Inclua no `resumo`: conceito sugerido, fotos boas (quais URLs de `gallery`/`sitePhotos`), frases de clientes aproveitáveis.
 
 ## 6. Regras
 Só dados reais. O que não foi verificado, diga "não verificado". Nada de jargão ("presença digital robusta"): fale de cliente, agenda, orçamento, venda.

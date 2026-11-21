@@ -46,11 +46,12 @@ html.tm-js [data-reveal].tm-in { opacity: 1; transform: none; filter: none; }
 [data-fill]::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--tm-fill, rgba(255,255,255,.18)); transform: translateY(101%); transition: transform .45s var(--tm-ease); }
 [data-fill]:hover::before { transform: none; }
 
-/* Imagem que revela por cortina */
-html.tm-js [data-curtain] { clip-path: inset(0 0 100% 0); transition: clip-path 1.2s var(--tm-ease); transition-delay: var(--tm-delay, 0s); }
-html.tm-js [data-curtain].tm-in { clip-path: inset(0 0 0 0); }
-[data-curtain] img { transform: scale(1.15); transition: transform 1.6s var(--tm-ease); }
-[data-curtain].tm-in img { transform: none; }
+/* Imagem que revela por cortina (camada que recolhe; não usa clip-path para o observador enxergar o elemento) */
+[data-curtain] { position: relative; overflow: hidden; }
+html.tm-js [data-curtain]::after { content: ''; position: absolute; inset: 0; z-index: 2; background: var(--tm-curtain, var(--bg, #fff)); transform-origin: 50% 0; transition: transform 1.2s var(--tm-ease); transition-delay: var(--tm-delay, 0s); pointer-events: none; }
+html.tm-js [data-curtain].tm-in::after { transform: scaleY(0); }
+html.tm-js [data-curtain] img { transform: scale(1.15); transition: transform 1.6s var(--tm-ease); transition-delay: var(--tm-delay, 0s); }
+html.tm-js [data-curtain].tm-in img { transform: none; }
 
 /* Hover de imagem: zoom leve */
 [data-zoom] { overflow: hidden; }
@@ -58,7 +59,8 @@ html.tm-js [data-curtain].tm-in { clip-path: inset(0 0 0 0); }
 [data-zoom]:hover img { transform: scale(1.05); }
 
 @media (prefers-reduced-motion: reduce) {
-  html.tm-js [data-reveal], html.tm-js [data-curtain], .tm-piece, [data-scrub-words] .tm-sw { opacity: 1 !important; transform: none !important; filter: none !important; clip-path: none !important; transition: none !important; }
+  html.tm-js [data-reveal], html.tm-js [data-curtain] img, .tm-piece, [data-scrub-words] .tm-sw { opacity: 1 !important; transform: none !important; filter: none !important; clip-path: none !important; transition: none !important; }
   [data-marquee] > .tm-track { animation: none; }
   [data-draw] { background-size: 100% .09em; }
+  html.tm-js [data-curtain]::after { display: none; }
 }

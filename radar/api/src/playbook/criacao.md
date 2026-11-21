@@ -1,5 +1,9 @@
 # Guia de criação de prévias · Agência Teleios
 
+> **Ordem:** `guia_de_criacao` → `brief_do_lead` (dados + rascunho mastigado) → melhore → `montar_site`.
+> **Como entregar:** use `montar_site` (motor premium, arquivo 9 do Webdesigner). Ele garante acabamento de estúdio; você faz a direção de arte e os textos.
+> HTML 100% autoral (`criar_previa` com `html`) só quando a ideia não couber no motor. Nunca entregue uma página com menos de 8 seções.
+
 A prévia é a primeira impressão que a Teleios causa. Ela precisa fazer o dono da empresa pensar *"fizeram isso pra mim"*,
 nunca *"isso é um modelo"*. Qualidade de estúdio, feita por gente que conhece o negócio dele.
 
@@ -17,11 +21,11 @@ Não é copiar o visual da Teleios (escuro + verde). É copiar o **rigor**:
 ## 2. Pesquisa antes de criar (obrigatório)
 Chame `ver_lead` e use:
 - `brandName` (nome limpo) para títulos. Nunca use o nome bruto do Google com descrição colada.
-- `photos`: fotos reais da empresa no Google Maps e `sitePhotos`: fotos do site da própria empresa. **Prioridade máxima.**
+- `gallery`: fotos reais da empresa no Google Maps e `sitePhotos`: fotos do site da própria empresa. **Prioridade máxima.**
 - `brand.logo`: logo encontrado no site (use se tiver boa qualidade; senão crie o logotipo tipográfico).
 - `about`, `priceRange`: descrição e faixa de preço do Google, quando houver.
 - `rating`, `reviews`, `reviewSamples`: só números e frases reais.
-- `neighborhood`, `city`, `hours`, `phone`, `instagram`, `website`, `googleCategory`.
+- `neighborhood`, `city`, `hours` (texto pronto, ex.: "Seg–Sex 08h–18h · Sáb 08h–12h") e `hoursTable`, `phone`, `instagram`, `website`, `googleCategory`.
 - `brand.colors`: cores tiradas do site/Instagram do cliente.
 - `analysis`: o ponto fraco que a prévia resolve (ex.: não tem site, site ruim no celular).
 
@@ -57,7 +61,7 @@ No `<head>`: `<link rel="stylesheet" href="/kit/motion.css"><script src="/kit/mo
 Não exagere: 1 momento assinatura forte vale mais que 10 efeitos.
 
 ## 6. Imagens
-1. Fotos reais da empresa (`photos`) — use com `data-curtain`/`data-zoom`, `loading="lazy"`, `alt` descritivo.
+1. Fotos reais da empresa (`gallery` do Maps e `sitePhotos` do site) — use com `data-curtain`/`data-zoom`, `loading="lazy"`, `alt` descritivo.
 2. Sem fotos: composição tipográfica, SVG/CSS ligado ao conceito, texturas sutis. Fica mais autêntico que banco de imagem.
 3. Banco de imagens (Unsplash etc.) só se não houver outra saída, poucas, e com a legenda discreta "imagem ilustrativa".
    **Nunca** apresente foto de banco como trabalho do cliente.

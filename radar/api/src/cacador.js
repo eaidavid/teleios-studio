@@ -78,16 +78,44 @@ export function reviewsOf(r) {
     .filter((x) => x.text.length > 20).slice(0, 6);
 }
 
+/* Horário do Maps (objeto por dia) -> texto legível */
+const DAYS = [['segunda-feira', 'Seg'], ['terça-feira', 'Ter'], ['quarta-feira', 'Qua'], ['quinta-feira', 'Qui'], ['sexta-feira', 'Sex'], ['sábado', 'Sáb'], ['domingo', 'Dom']];
+export function formatHours(raw) {
+  const obj = asJson(raw);
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { text: typeof raw === 'string' && !raw.startsWith('{') ? raw : '', table: null };
+  const norm = Object.fromEntries(Object.entries(obj).map(([k, v]) => [k.toLowerCase(), Array.isArray(v) ? v.join(', ') : String(v)]));
+  const rows = DAYS.map(([k, short]) => [short, norm[k] || norm[k.replace('-feira', '')] || '']).filter(([, v]) => v);
+  const groups = [];
+  for (const [d, v] of rows) {
+    const last = groups[groups.length - 1];
+    if (last && last.v === v) last.to = d; else groups.push({ from: d, to: d, v });
+  }
+  const text = groups.map((g) => `${g.from === g.to ? g.from : `${g.from}–${g.to}`} ${/fechado/i.test(g.v) ? 'fechado' : g.v.replace(/:00/g, 'h').replace(/–/g, '–')}`).join(' · ');
+  return { text, table: Object.fromEntries(rows) };
+}
+
+/* Fora do segmento (aparecem nas buscas, mas não são o público da campanha) */
+const EXCLUDE = {
+  'Móveis planejados': /colch|eletro|estofad|sof[aá]\b|tapete|cama box|loja de departamento|material de constru|madeireira|vidra[cç]aria|imobili/i,
+  'Clínica de estética': /farm[aá]cia|perfumaria|loja de cosm/i,
+  Restaurante: /supermercado|distribuidora|atacad/i,
+};
+
 /* Linha do Google Maps -> lead */
 function fromGoogle(r, campaign) {
   const addr = r.complete_address && typeof r.complete_address === 'object' ? r.complete_address : (() => { try { return JSON.parse(r.complete_address || '{}'); } catch { return {}; } })();
-  const category = mapCategory(r.category, campaign?.category);
+  // Na campanha, o segmento é o da campanha; a categoria do Google fica guardada à parte
+  const category = campaign?.category || mapCategory(r.category);
+  const gallery = photosOf(r);
+  const hours = formatHours(r.open_hours);
+  const site = String(r.website || r.web_site || '').trim();
   return {
     placeKey: r.place_id || r.cid || r.data_id || `${r.title}|${r.address}`,
+    excluded: EXCLUDE[category]?.test(`${r.category} ${r.title}`) || false,
     data: {
       name: r.title || 'Sem nome',
       brandName: cleanName(r.title || ''),
-      photos: photosOf(r),
+      gallery,
       reviewSamples: reviewsOf(r),
       category,
       googleCategory: r.category || '',
@@ -97,22 +125,24 @@ function fromGoogle(r, campaign) {
       address: r.address || '',
       phone: r.phone || '',
       whatsapp: /^\(?\d{2}\)?\s?9/.test(String(r.phone || '').replace(/^\+55\s?/, '')),
-      website: host(r.website || r.web_site || ''),
+      website: host(site),
+      websiteUrl: site && !/google\.|facebook\.com|instagram\.com|wa\.me|linktr\.ee/i.test(site) ? (site.startsWith('http') ? site : `https://${site}`) : '',
+      instagram: /instagram\.com\/([a-z0-9_.]+)/i.test(site) ? `@${site.match(/instagram\.com\/([a-z0-9_.]+)/i)[1]}` : '',
       site: null,
-      instagram: '',
       social: null,
       email: firstEmail(r.emails),
       rating: num(r.review_rating),
       reviews: Math.round(num(r.review_count)),
       unanswered: 0,
-      photos: 0,
+      photos: gallery.length,
       ads: false,
-      hours: typeof r.open_hours === 'string' ? r.open_hours.slice(0, 80) : '',
+      hours: hours.text,
+      hoursTable: hours.table,
       lat: num(r.latitude), lng: num(r.longitude),
       mapsUrl: r.link || '',
       status: r.status || '',
       priceRange: r.price_range || '',
-      about: typeof r.descriptions === 'string' ? r.descriptions.slice(0, 400) : '',
+      about: (typeof r.descriptions === 'string' ? r.descriptions : '').slice(0, 400) || (typeof r.about === 'string' ? r.about.slice(0, 400) : ''),
       tags: [], notes: [], analysis: null, blocked: '', owner: 'David',
       next: 'Na fila de abordagem',
       palette: CATEGORIES[category]?.palette || ['#F2EFE9', '#14181D', '#00C48C'],
@@ -251,14 +281,27 @@ function brandColors(html) {
   return [...new Set([meta, ...top].filter(Boolean))].slice(0, 3);
 }
 
+async function fetchSite(data) {
+  const h = data.website;
+  const tries = [...new Set([data.websiteUrl, `https://${h}`, `https://www.${h.replace(/^www\./, '')}`, `http://${h}`].filter(Boolean))];
+  for (const url of tries) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 15e3);
+      const res = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'accept-language': 'pt-BR,pt;q=0.9' }, redirect: 'follow', signal: ctrl.signal });
+      clearTimeout(t);
+      if (res.ok) return res;
+    } catch { /* tenta a próxima forma do endereço */ }
+  }
+  return null;
+}
+
 export async function enrich(data) {
   if (!data.website) return data;
   const started = Date.now();
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 12e3);
-    const res = await fetch(`https://${data.website}`, { headers: { 'user-agent': UA }, redirect: 'follow', signal: ctrl.signal });
-    clearTimeout(t);
+    const res = await fetchSite(data);
+    if (!res) throw new Error('offline');
     const html = (await res.text()).slice(0, 600_000);
     const ms = Date.now() - started;
     const ig = html.match(/instagram\.com\/([a-z0-9_.]{2,30})/i)?.[1];
@@ -324,6 +367,7 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
         items = all.filter((it) => {
           if (seen.has(it.placeKey)) return false; seen.add(it.placeKey);
           if (/fechado permanentemente|permanently closed/i.test(it.data.status || '')) return false;
+          if (it.excluded) { st.offTopic = (st.offTopic || 0) + 1; return false; }
           if (geo && it.data.lat && it.data.lng && distKm(geo, { lat: it.data.lat, lon: it.data.lng }) > radius) { st.far = (st.far || 0) + 1; return false; }
           return true;
         });
@@ -338,7 +382,9 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
         if (exists.rows.length) {
           // já está no funil: só completa fotos, avaliações e nome limpo
           const cur = exists.rows[0].data; const add = {};
-          for (const k of ['brandName', 'photos', 'reviewSamples']) if ((!cur[k] || !cur[k].length) && it.data[k]?.length) add[k] = it.data[k];
+          for (const k of ['brandName', 'gallery', 'reviewSamples', 'hours', 'hoursTable', 'websiteUrl', 'about']) if (it.data[k] && (!cur[k] || !cur[k].length || (k === 'hours' && String(cur[k]).startsWith('{')))) add[k] = it.data[k];
+          if (add.gallery) add.photos = add.gallery.length;
+          if (cur.category !== it.data.category && campaign.category) add.category = it.data.category;
           if (Object.keys(add).length) await q('update leads set data = data || $2 where id = $1', [exists.rows[0].id, add]);
           continue;
         }

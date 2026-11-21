@@ -306,6 +306,23 @@ export const actions = {
     sync(`/requests/${id}`, 'DELETE');
   },
 
+  async buildPremium(leadId, direction) {
+    if (!isApi()) throw new Error('O motor premium roda no servidor.');
+    const site = await api(`/sites/${leadId}/premium`, 'POST', { direction });
+    set((s) => ({ ...s, sites: s.sites.some((x) => x.lead === leadId) ? s.sites.map((x) => (x.lead === leadId ? { ...x, ...site } : x)) : [site, ...s.sites] }));
+    return site;
+  },
+  async briefMd(leadId) {
+    if (!isApi()) throw new Error('O MD é montado no servidor.');
+    const res = await fetch(`./api/leads/${leadId}/brief`, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Não consegui montar o MD.');
+    return res.text();
+  },
+  markSiteSent(site) {
+    set((s) => ({ ...s, sites: s.sites.map((x) => (x.id === site.id ? { ...x, sent: Date.now() } : x)) }));
+    sync(`/sites/${site.id}/sent`, 'POST');
+  },
+
   // Sites-prévia (uma por lead; o servidor guarda pela empresa)
   saveSite(site) {
     lastEdit = Date.now();
@@ -318,6 +335,7 @@ export const actions = {
     siteTimers[site.lead] = setTimeout(async () => {
       try {
         const cur = state.sites.find((x) => x.lead === site.lead);
+        if (cur.hasHtml) return; // página feita pelo Claude: o painel não regrava
         const saved = await api('/sites', 'POST', { lead: site.lead, data: cur.data, direction: cur.direction, html: cur.html });
         if (site.sent && !cur.sentSynced) await api(`/sites/${saved.id}/sent`, 'POST');
         set((s) => ({ ...s, sites: s.sites.map((x) => (x.lead === site.lead ? { ...x, id: saved.id, slug: saved.slug, url: saved.url, sentSynced: x.sent ? true : x.sentSynced } : x)) }));

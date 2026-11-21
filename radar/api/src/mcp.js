@@ -19,6 +19,8 @@ import { getLead, patchLead, upsertSite, previewUrl, logActivity, mergeBots } fr
 import { STAGES } from '../../web/src/data/seed.js';
 import { BLOCKS, HEROES, FOOTERS, FONTS, RADIUS, ANIMS, TEXTS, STYLES, MOTIONS, GOALS, generateDesign } from '../../web/src/sites/generator.js';
 import { derivePalettes } from '../../web/src/sites/colors.js';
+import { renderPremium, FONTS as PFONTS, MOTIFS, TEXTURES, SECTION_TYPES } from './templates/premium.js';
+import { briefMd } from './templates/brief.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const readDoc = (f) => readFileSync(path.join(HERE, f), 'utf8');
@@ -49,6 +51,8 @@ function buildServer() {
     if (tipo === 'previa') {
       const { readdirSync } = await import('node:fs');
       for (const f of readdirSync(path.join(HERE, 'playbook/webdesigner')).sort()) parts.push(readDoc(`playbook/webdesigner/${f}`));
+      // exemplos aprovados (especificações reais de montar_site) — a régua de qualidade
+      for (const f of readdirSync(path.join(HERE, 'playbook/exemplos')).sort()) parts.push(`## Exemplo aprovado: ${f.replace('.json', '')}\n\`\`\`json\n${readDoc(`playbook/exemplos/${f}`)}\n\`\`\``);
     }
     if (extra.length) parts.push(`## Instruções do David para o robô ${bot.name} (prioridade sobre o guia)\n${extra.map((x) => `- ${x}`).join('\n')}`);
     if (tipo === 'previa') parts.push(readDoc('kit/LEIA.md'));
@@ -144,9 +148,69 @@ function buildServer() {
     kit: readDoc('kit/LEIA.md'),
   }));
 
+  server.registerTool('montar_site', {
+    description: [
+      'JEITO PREFERIDO de criar a prévia: monta um site completo com acabamento de estúdio (motor premium da Teleios) a partir da sua direção de arte e dos seus textos.',
+      'Antes: guia_de_criacao({tipo:"previa"}) e ver_lead. Fotos reais do lead, avaliações, horário, telefone, WhatsApp e mapa entram sozinhos.',
+      'Você decide: tema (cores, fontes, motivo, textura, movimento) e a sequência de seções (tipos: ' + SECTION_TYPES.join(', ') + ').',
+      'Títulos têm duas partes (titulo_suave + titulo_forte) e aceitam <em> e <strong>. Use "html" para um momento autoral próprio (com atributos do Motion Kit).',
+      'Para ajustar depois, chame de novo com a especificação alterada (use ver_site para pegar a atual). Devolve o link público.',
+    ].join(' '),
+    inputSchema: {
+      lead_id: z.number().int(),
+      conceito: z.string().describe('O conceito em 1 frase (ex.: "precisão sob medida, contada por cotas e réguas")'),
+      tema: z.object({
+        fundo: z.string().describe('hex'), fundo_alt: z.string().optional(), tinta: z.string(), tinta_suave: z.string().optional(), acento: z.string(),
+        fonte_titulo: z.enum(Object.keys(PFONTS)), fonte_texto: z.enum(Object.keys(PFONTS)), fonte_destaque: z.enum(Object.keys(PFONTS)).optional().describe('para <em> nos títulos'),
+        peso_titulo: z.number().int().min(200).max(800).optional().describe('300 = fino elegante (padrão); 700+ = ousado'),
+        peso_forte: z.number().int().min(400).max(900).optional(),
+        raio: z.enum(['reto', 'suave', 'redondo']).optional(),
+        motivo: z.enum(MOTIFS).describe('símbolo dos rótulos e faixas: regua (marcenaria), ponto, linha, arco, cruz'),
+        textura: z.enum(TEXTURES).optional().describe('aplicada nas seções escuras e no rodapé'),
+        movimento: z.enum(['sutil', 'equilibrado', 'marcante']).optional(),
+      }),
+      marca: z.object({ nome: z.string().optional(), logo_url: z.string().optional(), logo_svg: z.string().optional() }).optional(),
+      secoes: z.array(z.record(z.any())).min(4).describe('Sequência de seções. Cada uma tem "tipo" e campos próprios (veja guia_de_criacao → Motor premium). Campos comuns: rotulo, titulo_suave, titulo_forte, fundo (claro|alt|escuro), textura, ancora, menu.'),
+      rodape: z.object({ frase: z.string().optional(), palavra_gigante: z.string().optional() }).optional(),
+      whatsapp_texto: z.string().optional().describe('mensagem pronta quando o cliente clicar no WhatsApp'),
+      menu_cta: z.object({ texto: z.string() }).optional(),
+      fotos: z.array(z.string()).optional().describe('URLs extras de fotos (as do lead já entram)'),
+      css_extra: z.string().optional().describe('CSS extra para detalhes autorais (opcional)'),
+    },
+  }, async (args) => {
+    const l = await getLead(args.lead_id);
+    if (!l) return fail(`Lead ${args.lead_id} não existe.`);
+    const { lead_id, ...spec } = args;
+    let html;
+    try { html = renderPremium(spec, l); } catch (e) { return fail(`Não consegui montar: ${e.message}`); }
+    const site = await upsertSite({ lead: lead_id, data: { premium: spec }, direction: { conceito: spec.conceito }, html });
+    await logActivity('construtor', `Webdesigner montou o site de ${l.brandName || l.name}`);
+    await completeRequests('previa', lead_id, { link: site.url });
+    const fotos = (l.gallery?.length || 0) + (l.sitePhotos?.length || 0);
+    return text({ ok: true, link: site.url, fotos_reais_usadas: fotos, aviso: fotos ? undefined : 'Este lead não tem fotos reais: prefira topo "tipografico", serviços em "cartoes" sem foto e um momento autoral em "html".' });
+  });
+
+  server.registerTool('brief_do_lead', {
+    description: 'Briefing mastigado de um lead para a prévia: dados, análise, avaliações reais, fotos, direção escolhida no Radar e um rascunho de especificação do montar_site para você melhorar. Use logo depois do guia_de_criacao.',
+    inputSchema: { lead_id: z.number().int() },
+  }, async ({ lead_id }) => {
+    const l = await getLead(lead_id);
+    if (!l) return fail('Lead não existe.');
+    const { rows } = await q('select direction from sites where lead_id = $1', [lead_id]);
+    return text(briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null }));
+  });
+
+  server.registerTool('ver_site', {
+    description: 'Mostra a especificação atual do site montado com montar_site (para você ajustar e chamar montar_site de novo).',
+    inputSchema: { lead_id: z.number().int() },
+  }, async ({ lead_id }) => {
+    const { rows } = await q('select data from sites where lead_id = $1', [lead_id]);
+    return rows[0]?.data?.premium ? text(rows[0].data.premium) : fail('Esse lead não tem site montado pelo motor premium.');
+  });
+
   server.registerTool('criar_previa', {
     description: [
-      'Cria ou atualiza o site-prévia de um lead e devolve o LINK PÚBLICO para mandar à empresa. ANTES: chame guia_de_criacao({tipo:"previa"}) e ver_lead. O jeito preferido é "html": página autoral completa seguindo o guia, com o Teleios Motion Kit (/kit/motion.js) e fotos reais do lead.',
+      'Alternativa ao montar_site (prefira montar_site). Cria/atualiza a prévia com HTML 100% autoral (use só se a ideia não couber no motor premium) ou com o construtor simples. ANTES: guia_de_criacao({tipo:"previa"}).',
       'Três jeitos: (1) só "direcao": o construtor monta tudo; (2) "design": você escolhe textos, seções e estilo (veja catalogo_construtor); (3) "html": página completa escrita por você.',
       'Use as cores da marca do lead (campo brand.colors em ver_lead) para não fugir da identidade dele.',
     ].join(' '),
@@ -235,7 +299,7 @@ function buildServer() {
       'COMECE POR AQUI quando o usuário disser "faz os pedidos do Radar", "a fila", "o que tem pra fazer" ou parecido.',
       'Lista os pedidos pendentes que ele deixou no Radar. Tipos:',
       '"analise" (analise o lead com ver_lead e grave com salvar_analise),',
-      '"previa" (crie o site-prévia com criar_previa; leia ver_lead antes e use as cores da marca; siga payload.observacoes se houver),',
+      '"previa" (leia guia_de_criacao + ver_lead e monte o site com montar_site; se payload.ajuste, pegue a versão atual com ver_site e aplique payload.observacoes),',
       '"busca" (pedido em texto livre da Reunião da manhã: interprete, use criar_campanha com buscar_agora=true e depois concluir_pedido).',
       'Análise e prévia são marcadas como feitas automaticamente; busca, use concluir_pedido. No fim, devolva um resumo com os links.',
     ].join(' '),
