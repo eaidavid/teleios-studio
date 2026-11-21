@@ -39,7 +39,7 @@ h1 strong,h2 strong{font-weight:700}.soft{color:var(--ink-soft)}em{font-style:it
 - **Logo tipográfico SVG:** `<svg viewBox="0 0 220 40" role="img" aria-label="{Empresa}"><text x="0" y="30" font-family="{display}" font-size="30" font-weight="700" letter-spacing="-1">{nome}</text><circle cx="..." cy="..." r="4" fill="var(--accent)"/></svg>`
 
 ## 7.3 Fotos reais (Google Maps)
-- Junte `photos` (Maps) e `sitePhotos` (site da empresa). Use a mais nítida e representativa no topo; demais no portfólio. `object-fit:cover` com `aspect-ratio` (4/5, 3/2, 1/1).
+- Junte `gallery` (Maps) e `sitePhotos` (site da empresa). Use a mais nítida e representativa no topo; demais no portfólio. `object-fit:cover` com `aspect-ratio` (4/5, 3/2, 1/1).
 - Fotos do Maps variam de qualidade: escolha as nítidas, recorte com `object-position`, aplique película leve na cor da tinta para unificar.
 - `loading="lazy"` exceto a primeira; `alt` descritivo e honesto.
 

@@ -8,7 +8,7 @@ Leia o lead inteiro (`ver_lead`). Anote:
 - **O que vende de verdade** (não a categoria): "cozinha que cabe a família inteira", "corte rápido sem marcar hora".
 - **Para quem**: bairro, faixa de preço provável (fotos, avaliações), público (famílias, atletas, empresas).
 - **Prova real**: nota, nº de avaliações, frases de clientes (`reviewSamples`), tempo de casa só se dito.
-- **Matéria-prima visual**: fotos reais (`photos`), cores da marca (`brand.colors`), logo/Instagram.
+- **Matéria-prima visual**: fotos reais (`gallery` e `sitePhotos`), cores da marca (`brand.colors`), logo/Instagram.
 - **Dor que a prévia resolve** (`analysis.gaps`): sem site, site quebrado no celular, Instagram parado.
 
 ## 1.2 Conceito (uma frase, um motivo)

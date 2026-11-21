@@ -306,6 +306,11 @@ export const actions = {
     sync(`/requests/${id}`, 'DELETE');
   },
 
+  markSiteSent(site) {
+    set((s) => ({ ...s, sites: s.sites.map((x) => (x.id === site.id ? { ...x, sent: Date.now() } : x)) }));
+    sync(`/sites/${site.id}/sent`, 'POST');
+  },
+
   // Sites-prévia (uma por lead; o servidor guarda pela empresa)
   saveSite(site) {
     lastEdit = Date.now();
@@ -318,6 +323,7 @@ export const actions = {
     siteTimers[site.lead] = setTimeout(async () => {
       try {
         const cur = state.sites.find((x) => x.lead === site.lead);
+        if (cur.hasHtml) return; // página feita pelo Claude: o painel não regrava
         const saved = await api('/sites', 'POST', { lead: site.lead, data: cur.data, direction: cur.direction, html: cur.html });
         if (site.sent && !cur.sentSynced) await api(`/sites/${saved.id}/sent`, 'POST');
         set((s) => ({ ...s, sites: s.sites.map((x) => (x.lead === site.lead ? { ...x, id: saved.id, slug: saved.slug, url: saved.url, sentSynced: x.sent ? true : x.sentSynced } : x)) }));

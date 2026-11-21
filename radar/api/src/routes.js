@@ -85,7 +85,8 @@ export function registerRoutes(app) {
     return {
       leads: leads.rows.map(leadRow),
       campaigns: campaigns.rows.map((r) => ({ ...r.data, huntJob: undefined, id: r.id, createdAt: new Date(r.created_at).getTime(), hunt: huntStatus(r.id) || r.data.lastHunt || null })),
-      sites: sites.rows.map((r) => ({ ...siteRow(r), url: previewUrl(r.slug) })),
+      // o HTML das prévias não vai no estado (é pesado); o painel abre o link
+      sites: sites.rows.map((r) => { const x = siteRow(r); const hasHtml = !!x.html; delete x.html; return { ...x, hasHtml, url: previewUrl(r.slug) }; }),
       conversations, control,
       bots: mergeBots(await kvGet('bots', seedBots)),
       settings: await kvGet('settings', { ...seedSettings, whatsapp: { connected: false, number: '', warmupDay: 0, warmupTotal: 14 }, ai: { ...seedSettings.ai, keyConfigured: false } }),
