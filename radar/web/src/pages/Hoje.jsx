@@ -178,7 +178,7 @@ export default function Hoje() {
           </section>
 
           <section className="card">
-            <div className="card-h"><h2><PenLine size={17} />Aprovar antes de enviar {approvals.length > 0 && <span className="pill warn">{approvals.length}</span>}</h2></div>
+            <div className="card-h"><h2><PenLine size={17} />Aprovar antes de enviar {approvals.length > 0 && <span className="pill warn">{approvals.length}</span>}</h2>{approvals.length > 1 && <button type="button" className="btn btn-primary btn-sm" onClick={() => { approvals.forEach((a) => actions.approve(a.lead, document.getElementById(`apv-${a.lead}`)?.value)); toast(`${approvals.length} mensagens na fila de envio`); }}><Check size={14} />Aprovar todas</button>}</div>
             {approvals.length === 0 ? (
               <Empty icon={<Check size={22} />} title="Tudo aprovado">O Redator manda para revisão as mensagens em que fica em dúvida.</Empty>
             ) : (
@@ -187,14 +187,15 @@ export default function Hoje() {
                   {approvals.map((a) => {
                     const l = leads.find((x) => x.id === a.lead);
                     if (!l) return null;
-                    const msg = l.analysis?.message || `Oi! Vi que a ${l.name} tem nota ${l.rating} no Google…`;
+                    const msg = a.text || l.analysis?.message || `Oi! Vi que a ${l.name} tem nota ${l.rating} no Google…`;
                     return (
                       <motion.li key={a.lead} layout exit={{ opacity: 0, height: 0 }} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={l.name} size="sm" /><b style={{ fontWeight: 600 }}>{l.name}</b></div>
-                        <div className="msg-box" style={{ fontSize: 12.5 }}>{msg}</div>
+                        <textarea className="textarea msg-box" style={{ fontSize: 12.5, minHeight: 92 }} defaultValue={msg} id={`apv-${a.lead}`} aria-label={`Mensagem para ${l.name}`} />
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <button type="button" className="btn btn-primary btn-sm" onClick={() => { actions.approve(l.id); toast('Mensagem na fila de envio'); }}><Check size={14} />Aprovar</button>
-                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => app.openLead(l.id)}>Editar</button>
+                          <button type="button" className="btn btn-primary btn-sm" onClick={() => { actions.approve(l.id, document.getElementById(`apv-${a.lead}`)?.value); toast('Na fila de envio, no ritmo seguro'); }}><Check size={14} />Aprovar</button>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => app.openLead(l.id)}>Ver lead</button>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { actions.rejectApproval(l.id); toast('Mensagem descartada'); }}>Descartar</button>
                         </div>
                       </motion.li>
                     );

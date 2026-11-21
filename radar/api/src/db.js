@@ -67,6 +67,17 @@ create table if not exists requests (
   done_at timestamptz
 );
 create index if not exists requests_status_idx on requests(status);
+create table if not exists outbox (
+  id serial primary key,
+  lead_id int not null references leads(id) on delete cascade,
+  text text not null,
+  by text not null default 'Redator',
+  status text not null default 'pending',
+  error text,
+  created_at timestamptz not null default now(),
+  sent_at timestamptz
+);
+create index if not exists outbox_status_idx on outbox(status);
 create table if not exists activity (
   id serial primary key,
   bot text not null,

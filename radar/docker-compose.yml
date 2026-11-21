@@ -12,6 +12,8 @@ services:
       PUBLIC_URL: ${PUBLIC_URL:-https://radar.agenciateleios.com.br}
       PREVIEW_URL: ${PREVIEW_URL:-https://radar.agenciateleios.com.br/p}
       SCRAPER_URL: http://google-maps-scraper:8080
+    volumes:
+      - radar-data:/data   # sessão do WhatsApp (não apaga ao atualizar)
     depends_on:
       db:
         condition: service_healthy
@@ -41,5 +43,6 @@ services:
       - gmaps-data:/gmapsdata
 
 volumes:
+  radar-data:
   radar-db:
   gmaps-data:

@@ -4,6 +4,7 @@ import { q, leadRow, siteRow, kvGet, kvSet, requestRow } from './db.js';
 import { analyze } from '../../web/src/data/analysis.js';
 import { seedBots, seedSettings } from '../../web/src/data/seed.js';
 import { hunt, huntStatus } from './cacador.js';
+import { waStatus, connect as waConnect, logout as waLogout, sendNow, enqueue, sentTodayCount } from './whatsapp.js';
 
 const SPLIT = ['id', 'stage', 'campaign', 'createdAt'];
 const dataOf = (obj) => Object.fromEntries(Object.entries(obj).filter(([k]) => !SPLIT.includes(k)));
@@ -70,7 +71,8 @@ export function registerRoutes(app) {
     const conversations = {}; const control = {};
     convs.rows.forEach((c) => { conversations[c.lead_id] = c.messages; control[c.lead_id] = c.control; });
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const sentToday = (await q("select count(*)::int as n from leads where (data->>'lastContactAt')::bigint >= $1", [today.getTime()])).rows[0].n;
+    const sentToday = await sentTodayCount();
+    const outbox = (await q("select o.id, o.lead_id as lead, o.text, o.status, o.error, extract(epoch from o.created_at) * 1000 as at from outbox o where o.status = 'pending' or o.created_at > now() - interval '2 days' order by o.created_at desc limit 200")).rows.map((r) => ({ ...r, at: Number(r.at) }));
     return {
       leads: leads.rows.map(leadRow),
       campaigns: campaigns.rows.map((r) => ({ ...r.data, id: r.id, createdAt: new Date(r.created_at).getTime(), hunt: huntStatus(r.id) })),
@@ -82,6 +84,8 @@ export function registerRoutes(app) {
       activity: act.rows.map((a) => ({ ...a, at: Number(a.at) })),
       sentToday,
       requests: reqs.rows.map(requestRow),
+      outbox,
+      wa: waStatus(),
     };
   });
 
@@ -163,10 +167,8 @@ export function registerRoutes(app) {
     await pushMsg(Number(req.params.id), { sys: true, text: who === 'me' ? 'Você assumiu · o robô parou' : 'Devolvida ao robô', at: Date.now() }, who);
     return { ok: true };
   });
-  app.post('/api/conversations/:id/send', async (req) => {
-    // O envio real pelo WhatsApp entra na fase do Baileys; por ora registra a mensagem.
-    await pushMsg(Number(req.params.id), { t: 'out', by: 'Você', me: true, text: String(req.body?.text || ''), at: Date.now() });
-    return { ok: true };
+  app.post('/api/conversations/:id/send', async (req, reply) => {
+    try { return await sendNow(Number(req.params.id), String(req.body?.text || '')); } catch (e) { return reply.code(409).send({ error: e.message }); }
   });
   app.post('/api/conversations/:id/resolve', async (req) => {
     await q("update conversations set control = 'done' where lead_id = $1", [Number(req.params.id)]);
@@ -174,11 +176,30 @@ export function registerRoutes(app) {
   });
 
   /* ---------- Aprovações, robôs, configurações ---------- */
-  app.post('/api/approvals/:lead/approve', async (req) => {
+  app.post('/api/approvals/:lead/approve', async (req, reply) => {
+    const lead = Number(req.params.lead);
+    const list = await kvGet('approvals', []);
+    const item = list.find((a) => a.lead === lead);
+    const text = String(req.body?.text || item?.text || '').trim();
+    if (!text) return reply.code(400).send({ error: 'Mensagem vazia.' });
+    await enqueue(lead, text);
+    await kvSet('approvals', list.filter((a) => a.lead !== lead));
+    return { ok: true };
+  });
+  app.post('/api/approvals/:lead/reject', async (req) => {
     const list = await kvGet('approvals', []);
     await kvSet('approvals', list.filter((a) => a.lead !== Number(req.params.lead)));
     return { ok: true };
   });
+  app.delete('/api/outbox/:id', async (req) => {
+    await q("delete from outbox where id = $1 and status = 'pending'", [Number(req.params.id)]);
+    return { ok: true };
+  });
+
+  /* ---------- WhatsApp ---------- */
+  app.get('/api/whatsapp', async () => ({ ...waStatus(), sentToday: await sentTodayCount() }));
+  app.post('/api/whatsapp/connect', async () => waConnect());
+  app.post('/api/whatsapp/logout', async () => { await waLogout(); return { ok: true }; });
   app.patch('/api/bots/:id', async (req) => {
     const bots = await kvGet('bots', seedBots);
     await kvSet('bots', bots.map((b) => (b.id === req.params.id ? { ...b, ...req.body } : b)));

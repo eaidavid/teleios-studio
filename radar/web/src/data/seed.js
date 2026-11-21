@@ -146,8 +146,8 @@ export const seedBots = [
 
 export const seedSettings = {
   whatsapp: { connected: true, number: '+55 15 9••••-4821', warmupDay: 12, warmupTotal: 14 },
-  limits: { daily: 40, minInterval: 3, maxInterval: 9, start: '09:00', end: '18:00', days: [1, 2, 3, 4, 5], skipHolidays: true },
-  messages: { tone: 'Próximo e direto', signature: 'David, Agência Teleios', optOut: 'parar, não tenho interesse, remove, sair', maxFollowups: 3, approveSensitive: true },
+  limits: { daily: 25, minInterval: 3, maxInterval: 9, start: '09:00', end: '18:00', days: [1, 2, 3, 4, 5], skipHolidays: true },
+  messages: { tone: 'Próximo e direto', signature: 'David, Agência Teleios', optOut: 'parar, não tenho interesse, remove, sair', maxFollowups: 3, approveSensitive: true, autoSend: false },
   ai: { model: 'Claude Sonnet', creativity: 0.4, analyzeOnFind: true, keyConfigured: false },
   integrations: { scraperUrl: 'http://google-maps-scraper:8080', calendar: false, webhook: '' },
   data: { retentionDays: 365, deleteOnOptOut: true },

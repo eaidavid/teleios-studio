@@ -15,6 +15,8 @@ COPY api/src api/src
 # A API reaproveita a análise, o seed e o construtor do painel
 COPY web/src web/src
 COPY --from=web /app/web/dist web/dist
+RUN mkdir -p /data/wa-auth && chown -R node:node /data
+VOLUME /data
 EXPOSE 3000
 USER node
 CMD ["node", "api/src/server.js"]

@@ -114,6 +114,8 @@ export async function boot() {
   setInterval(() => { if (isApi() && document.visibilityState === 'visible' && Date.now() - lastEdit > 5000) refresh().catch(() => {}); }, 20000);
 }
 
+export const waApi = (method, action = '') => api(`/whatsapp${action ? `/${action}` : ''}`, method);
+
 export async function login(email, password) {
   const user = await api('/login', 'POST', { email, password });
   set((s) => ({ ...s, session: { mode: 'api', user } }));
@@ -248,9 +250,13 @@ export const actions = {
   },
 
   // Aprovações
-  approve(lead) {
-    set((s) => ({ ...s, approvals: s.approvals.filter((a) => a.lead !== lead), sentToday: s.sentToday + 1 }));
-    sync(`/approvals/${lead}/approve`, 'POST');
+  approve(lead, text) {
+    set((s) => ({ ...s, approvals: s.approvals.filter((a) => a.lead !== lead) }));
+    sync(`/approvals/${lead}/approve`, 'POST', text ? { text } : {}).then(() => isApi() && refresh());
+  },
+  rejectApproval(lead) {
+    set((s) => ({ ...s, approvals: s.approvals.filter((a) => a.lead !== lead) }));
+    sync(`/approvals/${lead}/reject`, 'POST');
   },
 
   // Robôs e configurações

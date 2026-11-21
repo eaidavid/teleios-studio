@@ -7,6 +7,9 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { z } from 'zod';
 import { q, leadRow, siteRow, requestRow, completeRequests } from './db.js';
 import { hunt, huntStatus } from './cacador.js';
+import { enqueue, waStatus } from './whatsapp.js';
+import { kvGet, kvSet } from './db.js';
+import { seedSettings as defaults } from '../../web/src/data/seed.js';
 import { CATEGORIES } from '../../web/src/data/seed.js';
 import { getLead, patchLead, upsertSite, previewUrl, logActivity } from './routes.js';
 import { STAGES } from '../../web/src/data/seed.js';
@@ -161,6 +164,32 @@ function buildServer() {
   }, async () => {
     const { rows } = await q("select s.slug, s.lead_id, s.sent_at, s.updated_at, l.data->>'name' as nome from sites s join leads l on l.id = s.lead_id order by s.updated_at desc limit 100");
     return text(rows.map((r) => ({ lead_id: r.lead_id, empresa: r.nome, link: previewUrl(r.slug), enviada: !!r.sent_at })));
+  });
+
+  server.registerTool('preparar_mensagem', {
+    description: [
+      'Prepara a PRIMEIRA mensagem de WhatsApp para um lead (use depois de criar a prévia; inclua o link dela).',
+      'Por padrão vai para "Aprovar antes de enviar" no Radar; se o usuário ligou o envio direto em Configurações, entra direto na fila de envio,',
+      'que respeita limite diário, intervalo aleatório e horário comercial. Escreva curto (até ~4 linhas), pessoal, citando um fato real do negócio,',
+      'sem parecer propaganda, terminando com uma pergunta simples. Nunca envie para lead bloqueado.',
+    ].join(' '),
+    inputSchema: { lead_id: z.number().int(), texto: z.string().min(10).max(1200) },
+  }, async ({ lead_id, texto }) => {
+    const l = await getLead(lead_id);
+    if (!l) return fail('Lead não existe.');
+    if (l.blocked) return fail(`Não preparei: ${l.blocked}.`);
+    if (!l.phone) return fail('Lead sem telefone.');
+    const settings = await kvGet('settings', defaults);
+    const direct = settings.messages?.autoSend === true;
+    if (direct) {
+      await enqueue(lead_id, texto, 'Claude');
+    } else {
+      const list = await kvGet('approvals', []);
+      await kvSet('approvals', [...list.filter((a) => a.lead !== lead_id), { lead: lead_id, text: texto, by: 'Claude', at: Date.now() }]);
+    }
+    await logActivity('redator', `Claude escreveu a mensagem para ${l.name}`);
+    const st = waStatus();
+    return text({ ok: true, destino: direct ? 'fila de envio' : 'aguardando sua aprovação no Radar (tela Hoje)', whatsapp: st.state === 'open' ? 'conectado' : 'DESCONECTADO: conecte em Configurações → WhatsApp' });
   });
 
   server.registerTool('ver_fila', {

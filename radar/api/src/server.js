@@ -10,6 +10,7 @@ import { migrate, q } from './db.js';
 import { ensureAdmin, guard, registerAuth } from './auth.js';
 import { registerRoutes } from './routes.js';
 import { registerMcp } from './mcp.js';
+import { resume as resumeWhatsapp } from './whatsapp.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const DIST = process.env.WEB_DIST || path.resolve(here, '../../web/dist');
@@ -38,4 +39,5 @@ if (existsSync(DIST)) {
 
 await migrate();
 await ensureAdmin();
+await resumeWhatsapp();
 await app.listen({ host: '0.0.0.0', port: Number(process.env.PORT) || 3000 });

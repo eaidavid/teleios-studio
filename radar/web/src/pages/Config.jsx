@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, Clock, Database, KeyRound, Link2, MessageSquareText, RefreshCw, RotateCcw, ShieldCheck, Smartphone, Unplug, Users } from 'lucide-react';
 import { actions, useStore } from '../data/store';
 import { useApp } from '../App';
+import WhatsAppConnect from '../components/WhatsAppConnect';
 import { Segmented, Switch, ease, toast } from '../components/ui';
 
 const SECTIONS = [
@@ -49,7 +50,8 @@ export default function Config() {
           <motion.section key={sec} className="card set-sec" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease }}>
             {sec === 'whatsapp' && (
               <>
-                <h2>WhatsApp</h2><p>O número que os robôs usam. Use um chip só para isso.</p>
+                <h2>WhatsApp</h2><p>O número comercial que o Radar usa para a primeira mensagem e o follow-up. Respostas dos leads aparecem em Conversas e o robô para na hora.</p>
+                {mode === 'api' ? <WhatsAppConnect /> : (
                 <div className="wa-card">
                   {st.whatsapp.connected ? <span className="botc-ic" style={{ width: 64, height: 64, background: 'var(--green)', borderRadius: 18 }}><ShieldCheck size={28} /></span> : <FakeQR />}
                   <div style={{ display: 'grid', gap: 6 }}>
@@ -62,6 +64,7 @@ export default function Config() {
                     </div>
                   </div>
                 </div>
+                )}
                 <Row title="Aquecimento de número novo" hint="Começa com 10 mensagens por dia e sobe aos poucos até o limite."><Switch on label="Aquecimento" onChange={() => toast('O aquecimento é recomendado para chip novo')} /></Row>
                 <Row title="Pausar se houver bloqueio" hint="Se alguém bloquear ou denunciar, os envios param por 24 horas."><Switch on label="Pausar em bloqueio" onChange={() => toast('Mantido ligado por segurança')} /></Row>
               </>
@@ -98,6 +101,7 @@ export default function Config() {
                 <label className="field"><span>Assinatura</span><input id="msg-sig" className="input" value={st.messages.signature} onChange={(e) => actions.updateSettings('messages', { signature: e.target.value })} /></label>
                 <label className="field"><span>Palavras que encerram o contato</span><input id="msg-opt" className="input" value={st.messages.optOut} onChange={(e) => actions.updateSettings('messages', { optOut: e.target.value })} /><small>Se a pessoa escrever uma delas, o robô para e marca "Não contatar" para sempre.</small></label>
                 <Row title={`Máximo de follow-ups: ${st.messages.maxFollowups}`}><input type="range" min="0" max="5" value={st.messages.maxFollowups} onChange={(e) => actions.updateSettings('messages', { maxFollowups: +e.target.value })} style={{ accentColor: 'var(--green)', width: 160 }} aria-label="Máximo de follow-ups" /></Row>
+                <Row title="Enviar direto, sem aprovar" hint="Desligado: as mensagens do Claude esperam sua aprovação na tela Hoje. Ligue quando confiar no tom."><Switch on={!!st.messages.autoSend} label="Envio direto" onChange={(v) => up('messages', { autoSend: v }, v ? 'Envio direto ligado' : 'Mensagens voltam a pedir aprovação')} /></Row>
                 <Row title="Pedir aprovação em mensagens sensíveis" hint="O Redator manda para você quando não tem certeza."><Switch on={st.messages.approveSensitive} label="Aprovação" onChange={(v) => up('messages', { approveSensitive: v })} /></Row>
               </>
             )}
