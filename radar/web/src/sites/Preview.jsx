@@ -86,8 +86,10 @@ function Compare({ r, a, b, accent }) {
   );
 }
 
-export default function Preview({ lead, d, mobile, replay }) {
-  const root = useRef(null);
+export default function Preview({ lead, d, mobile, replay, standalone }) {
+  const frame = useRef(null);
+  // Na página pública a rolagem é a da janela; no editor, a da moldura
+  const root = standalone ? undefined : frame;
   const { bg, ink, accent } = d.palette;
   const accent2 = d.palette.accent2 || accent;
   const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, ${bg})`;
@@ -211,14 +213,19 @@ export default function Preview({ lead, d, mobile, replay }) {
     gigante: <div style={{ background: ink, color: bg, padding: '28px 24px 10px', overflow: 'hidden' }}><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.75, flexWrap: 'wrap', gap: 8 }}><span>{lead.phone}</span><span>{lead.address}</span></div><R a={a} root={root}><div style={{ ...H, fontSize: mobile ? 46 : 96, lineHeight: 0.9, marginTop: 18, whiteSpace: 'nowrap' }}>{lead.name.split(' ').slice(-1)[0]}<span style={{ color: accent }}>.</span></div></R></div>,
   };
 
+  const body = (
+    <>
+      {heroes[d.hero]}
+      {d.order.filter((b) => d.on[b]).map((b) => <div key={b}>{block(b)}</div>)}
+      {footers[d.footer]}
+    </>
+  );
+  if (standalone) return <div className="pv" style={{ background: bg, color: ink, minHeight: '100vh' }}>{body}</div>;
+
   return (
     <motion.div className="preview-frame" layout style={{ maxWidth: mobile ? 390 : '100%', margin: '0 auto', width: '100%' }} transition={{ duration: 0.4, ease }}>
       <div className="preview-bar"><i /><i /><i /><span>{slug(lead.name)}.previa.agenciateleios.com.br</span></div>
-      <div ref={root} className="pv" key={replay} style={{ background: bg, color: ink, maxHeight: 700, overflowY: 'auto' }}>
-        {heroes[d.hero]}
-        {d.order.filter((b) => d.on[b]).map((b) => <div key={b}>{block(b)}</div>)}
-        {footers[d.footer]}
-      </div>
+      <div ref={frame} className="pv" key={replay} style={{ background: bg, color: ink, maxHeight: 700, overflowY: 'auto' }}>{body}</div>
     </motion.div>
   );
 }

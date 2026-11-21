@@ -25,7 +25,7 @@ export default function LeadForm({ value, onClose }) {
     if (Object.keys(er).length) return;
     const data = { ...f, tags: typeof f.tags === 'string' ? f.tags.split(',').map((t) => t.trim()).filter(Boolean) : f.tags, palette: CATEGORIES[f.category].palette };
     if (editing) { actions.updateLead(f.id, data); toast('Lead atualizado'); onClose(); }
-    else { const id = actions.createLead(data); toast('Lead criado'); onClose(); setTimeout(() => app.openLead(id), 200); }
+    else { actions.createLead(data).then((id) => { toast('Lead criado'); onClose(); setTimeout(() => app.openLead(id), 200); }, (er2) => toast(er2.message)); }
   };
 
   return (

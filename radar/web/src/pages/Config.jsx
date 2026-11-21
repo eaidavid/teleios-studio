@@ -28,6 +28,7 @@ function FakeQR() {
 export default function Config() {
   const app = useApp();
   const st = useStore((s) => s.settings);
+  const mode = useStore((s) => s.session.mode);
   const [sec, setSec] = useState(SECTIONS.some((s) => s.id === app.param) ? app.param : 'whatsapp');
   useEffect(() => { if (SECTIONS.some((s) => s.id === app.param)) setSec(app.param); }, [app.param]);
   const up = (section, data, msg = 'Configuração salva') => { actions.updateSettings(section, data); toast(msg); };
@@ -57,7 +58,7 @@ export default function Config() {
                     <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
                       {st.whatsapp.connected
                         ? <button type="button" className="btn btn-danger btn-sm" onClick={() => up('whatsapp', { connected: false }, 'Número desconectado')}><Unplug size={14} />Desconectar</button>
-                        : <button type="button" className="btn btn-primary btn-sm" onClick={() => up('whatsapp', { connected: true }, 'Número conectado (demonstração)')}><RefreshCw size={14} />Já escaneei</button>}
+                        : <button type="button" className="btn btn-primary btn-sm" onClick={() => (mode === 'api' ? toast('A conexão do WhatsApp comercial entra na próxima etapa (Baileys).') : up('whatsapp', { connected: true }, 'Número conectado (demonstração)'))}><RefreshCw size={14} />Já escaneei</button>}
                     </div>
                   </div>
                 </div>
@@ -134,7 +135,7 @@ export default function Config() {
                 <h2>Dados e privacidade</h2><p>Cuidados com a LGPD.</p>
                 <Row title={`Guardar leads por ${st.data.retentionDays} dias`} hint="Depois disso, leads sem conversa são apagados."><input id="data-ret" className="input" type="number" style={{ width: 90 }} value={st.data.retentionDays} onChange={(e) => actions.updateSettings('data', { retentionDays: +e.target.value })} aria-label="Dias de retenção" /></Row>
                 <Row title="Apagar dados de quem pedir para sair" hint="Fica só o número na lista de não contatar."><Switch on={st.data.deleteOnOptOut} label="Apagar no opt-out" onChange={(v) => up('data', { deleteOnOptOut: v })} /></Row>
-                <Row title="Restaurar dados de demonstração" hint="Apaga tudo o que você mudou neste navegador."><button type="button" className="btn btn-danger btn-sm" onClick={() => { actions.reset(); toast('Dados de demonstração restaurados'); }}><RotateCcw size={14} />Restaurar</button></Row>
+                {mode === 'demo' && <Row title="Restaurar dados de demonstração" hint="Apaga tudo o que você mudou neste navegador."><button type="button" className="btn btn-danger btn-sm" onClick={() => { actions.reset(); toast('Dados de demonstração restaurados'); }}><RotateCcw size={14} />Restaurar</button></Row>}
               </>
             )}
           </motion.section>

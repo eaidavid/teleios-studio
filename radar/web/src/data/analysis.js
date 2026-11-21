@@ -60,20 +60,22 @@ export function analyze(lead) {
   const oneOff = services.filter((x) => !x.monthly).reduce((a, x) => a + x.price, 0);
   const monthly = services.filter((x) => x.monthly).reduce((a, x) => a + x.price, 0);
 
-  const first = lead.contact.split(',')[0];
+  const first = String(lead.contact || '').split(',')[0].trim();
+  const hi = first ? `Oi, ${first}!` : 'Oi, tudo bem?';
+  const where = [lead.neighborhood, lead.city].filter(Boolean).join(', ');
   const top = gaps.sort((a, b) => ['alta', 'media', 'baixa'].indexOf(a.severity) - ['alta', 'media', 'baixa'].indexOf(b.severity))[0];
-  const proof = lead.reviews >= 80 ? `nota ${String(lead.rating).replace('.', ',')} e ${lead.reviews} avaliações` : `nota ${String(lead.rating).replace('.', ',')} no Google`;
+  const proof = !lead.rating ? `um bom nome em ${lead.city || 'sua região'}` : lead.reviews >= 80 ? `nota ${String(lead.rating).replace('.', ',')} e ${lead.reviews} avaliações` : `nota ${String(lead.rating).replace('.', ',')} no Google`;
   const angle = top
     ? `Elogiar a reputação (${proof}) e mostrar que "${top.title.toLowerCase()}" está fazendo ela perder clientes.`
     : `Mostrar como transformar a boa reputação (${proof}) em mais agendamentos.`;
   const message = top
-    ? `Oi, ${first}! Vi que a ${lead.name} tem ${proof}, mas ${top.title.charAt(0).toLowerCase() + top.title.slice(1)}. Isso costuma fazer clientes irem para o concorrente. Posso te mostrar em 5 minutos como resolver?`
-    : `Oi, ${first}! Vi que a ${lead.name} tem ${proof}. Posso te mostrar como transformar isso em mais agendamentos?`;
+    ? `${hi} Vi que a ${lead.name} tem ${proof}, mas ${top.title.charAt(0).toLowerCase() + top.title.slice(1)}. Isso costuma fazer clientes irem para o concorrente. Posso te mostrar em 5 minutos como resolver?`
+    : `${hi} Vi que a ${lead.name} tem ${proof}. Posso te mostrar como transformar isso em mais agendamentos?`;
 
   const [bg, ink, accent] = lead.palette || ['#F2EFE9', '#14181D', '#00C48C'];
   const brief = {
     headline: briefHeadline(lead),
-    sub: `${lead.category} em ${lead.neighborhood}, ${lead.city}. ${proof.charAt(0).toUpperCase() + proof.slice(1)}.`,
+    sub: `${lead.category}${where ? ` em ${where}` : ''}. ${proof.charAt(0).toUpperCase() + proof.slice(1)}.`,
     cta: lead.whatsapp ? 'Agendar pelo WhatsApp' : 'Ligar agora',
     sections: ['Hero', 'Serviços', 'Avaliações do Google', 'Galeria', 'Localização e horário', 'Contato'],
     palette: { bg, ink, accent },

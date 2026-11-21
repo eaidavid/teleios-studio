@@ -615,3 +615,9 @@ table.tbl { width: 100%; border-collapse: separate; border-spacing: 0; min-width
 .foot-gigante i:nth-child(1) { left: 8px; right: 8px; bottom: 6px; height: 20px; background: var(--surface) !important; }
 .foot-gigante i:nth-child(2) { left: 8px; width: 25%; top: 8px; height: 3px; background: var(--surface) !important; }
 .foot-gigante i:nth-child(3) { right: 8px; width: 25%; top: 8px; height: 3px; }
+
+/* Entrada e login */
+.boot { min-height: 100vh; display: grid; place-items: center; background: var(--bg); }
+.login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: radial-gradient(60% 50% at 50% 0%, rgba(0,196,140,.12), transparent 70%), var(--bg); }
+.login-card { width: min(380px, 100%); display: grid; gap: 16px; padding: 28px; }
+.login-err { display: flex; gap: 8px; align-items: center; font-size: 13px; color: #FF8A7A; background: rgba(255,122,89,.1); border: 1px solid rgba(255,122,89,.25); padding: 10px 12px; border-radius: 10px; }

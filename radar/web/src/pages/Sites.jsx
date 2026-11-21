@@ -80,8 +80,8 @@ export default function Sites() {
           <div className="page-actions">
             <button type="button" className="btn btn-ghost" onClick={() => setMode('wizard')}><Compass size={15} />Mudar direção</button>
             <button type="button" className="btn btn-ghost" onClick={best}><Wand2 size={15} />Escolha o melhor</button>
-            <button type="button" className="btn btn-ghost" onClick={() => navigator.clipboard?.writeText(`https://previa.agenciateleios.com.br/${leadId}`).then(() => toast('Link copiado (demonstração)'), () => toast('Não foi possível copiar'))}><Copy size={15} />Copiar link</button>
-            <button type="button" className="btn btn-primary" onClick={() => { save(d, { sent: Date.now() }); toast('Prévia enviada para o lead (demonstração)'); }}><Send size={15} />Enviar ao lead</button>
+            <button type="button" className="btn btn-ghost" onClick={() => (site?.url ? navigator.clipboard?.writeText(site.url).then(() => toast('Link copiado'), () => toast('Não foi possível copiar')) : toast('O link aparece quando o Radar está no servidor'))}><Copy size={15} />Copiar link</button>
+            <button type="button" className="btn btn-primary" onClick={() => { save(d, { sent: Date.now() }); toast(site?.url ? 'Marcada como enviada. Mande o link pelo WhatsApp.' : 'Prévia marcada como enviada (demonstração)'); }}><Send size={15} />Enviar ao lead</button>
           </div>
         )}
       </div>

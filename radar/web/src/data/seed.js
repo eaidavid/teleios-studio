@@ -1,4 +1,4 @@
-import { hexToHsl, hslToHex } from '../sites/colors';
+import { hexToHsl, hslToHex } from '../sites/colors.js';
 
 // Dados de DEMONSTRAÇÃO: empresas, pessoas e números fictícios.
 // Serão substituídos pelo que o Caçador (scraper) trouxer de verdade.

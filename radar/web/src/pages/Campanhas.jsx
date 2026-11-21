@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MapPin, Pause, Pencil, Play, Plus, Search, Target, Trash2 } from 'lucide-react';
+import { Loader2, MapPin, Pause, Pencil, Play, Plus, Radar, Search, Target, Trash2 } from 'lucide-react';
 import { actions, useStore } from '../data/store';
+import { CATEGORIES } from '../data/seed';
 import { useApp } from '../App';
 import { Empty, Modal, Segmented, ago, itemAnim, listAnim, toast } from '../components/ui';
 
-const EMPTY = { name: '', query: '', city: 'Sorocaba', filters: [], variantA: '', variantB: '' };
+const EMPTY = { name: '', query: '', city: 'Sorocaba', category: 'Clínica de estética', filters: [], variantA: '', variantB: '' };
 const FILTERS = ['Com WhatsApp', 'Nota ≥ 4,5', 'Sem site', 'Instagram parado', 'Mais de 50 avaliações'];
 
 export default function Campanhas() {
@@ -22,11 +23,13 @@ export default function Campanhas() {
     const ls = leads.filter((l) => l.campaign === c.id);
     return { found: ls.length, sent: ls.filter((l) => l.stage !== 'found').length, reply: ls.filter((l) => ['reply', 'qual', 'prop', 'won'].includes(l.stage)).length, won: ls.filter((l) => l.stage === 'won').length };
   };
+  const live = useStore((s) => s.session.mode === 'api');
+  const huntNow = (c, engine) => actions.hunt(c.id, engine).then(() => toast(engine === 'osm' ? 'Buscando no OpenStreetMap…' : 'Caçador buscando no Google Maps…'), (e) => toast(e.message));
   const save = (e) => {
     e.preventDefault();
     if (!edit.name.trim() || !edit.query.trim()) return;
     actions.saveCampaign(edit);
-    toast(edit.id ? 'Campanha atualizada' : 'Campanha criada. O Caçador começa amanhã às 8h.');
+    toast(edit.id ? 'Campanha atualizada' : live ? 'Campanha criada. Clique em “Buscar agora” para rodar o Caçador.' : 'Campanha criada (demonstração)');
     setEdit(null);
   };
 
@@ -59,7 +62,15 @@ export default function Campanhas() {
                   <div className="camp-stats">
                     {[['Encontradas', st.found], ['Abordadas', st.sent], ['Responderam', st.reply], ['Ganhas', st.won]].map(([k, v]) => <div key={k}><strong className="tnum">{v}</strong><small>{k}</small></div>)}
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
+                  {c.hunt && c.hunt.state !== 'idle' && (
+                    <div className="faint" style={{ fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {c.hunt.state === 'running' ? <Loader2 size={12} className="spin" /> : <Radar size={12} />}
+                      {c.hunt.state === 'running' ? `${c.hunt.step}…` : c.hunt.state === 'error' ? `Falhou: ${c.hunt.step}` : `Última busca: ${c.hunt.found} achadas, ${c.hunt.added} novas`}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {live && <button type="button" className="btn btn-primary btn-sm" disabled={c.hunt?.state === 'running'} onClick={() => huntNow(c, 'google')} title="Google Maps (gosom)"><Radar size={13} />Buscar agora</button>}
+                    {live && <button type="button" className="btn btn-ghost btn-sm" disabled={c.hunt?.state === 'running'} onClick={() => huntNow(c, 'osm')} title="OpenStreetMap: gratuito, menos dados">OSM</button>}
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => { actions.toggleCampaign(c.id); toast(c.status === 'running' ? 'Campanha pausada' : 'Campanha retomada'); }}>{c.status === 'running' ? <><Pause size={13} />Pausar</> : <><Play size={13} />Retomar</>}</button>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEdit({ ...c })}><Pencil size={13} />Editar</button>
                     <span style={{ flex: 1 }} />
@@ -78,7 +89,10 @@ export default function Campanhas() {
           <form id="camp-form" onSubmit={save} style={{ display: 'grid', gap: 14 }}>
             <label className="field"><span>Nome</span><input id="cf-name" className="input" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} placeholder="Clínicas de estética · Sorocaba" /></label>
             <label className="field"><span>O que buscar</span><textarea id="cf-q" className="textarea" value={edit.query} onChange={(e) => setEdit({ ...edit, query: e.target.value })} placeholder="Clínicas de estética em Sorocaba com nota acima de 4,5" /><small>Escreva como falaria para uma pessoa.</small></label>
-            <label className="field"><span>Cidade</span><input id="cf-city" className="input" value={edit.city} onChange={(e) => setEdit({ ...edit, city: e.target.value })} /></label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <label className="field"><span>Cidade</span><input id="cf-city" className="input" value={edit.city} onChange={(e) => setEdit({ ...edit, city: e.target.value })} /></label>
+              <label className="field"><span>Segmento</span><select id="cf-cat" className="input" value={edit.category || ''} onChange={(e) => setEdit({ ...edit, category: e.target.value })}>{Object.keys(CATEGORIES).map((k) => <option key={k}>{k}</option>)}</select></label>
+            </div>
             <div className="field"><span>Filtros</span><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{FILTERS.map((f) => { const on = edit.filters.includes(f); return <button type="button" key={f} className={`chip ${on ? 'on' : ''}`} onClick={() => setEdit({ ...edit, filters: on ? edit.filters.filter((x) => x !== f) : [...edit.filters, f] })}>{f}</button>; })}</div></div>
             <label className="field"><span>Abordagem A</span><input id="cf-a" className="input" value={edit.variantA} onChange={(e) => setEdit({ ...edit, variantA: e.target.value })} placeholder="Vi que a {empresa} tem nota {nota}, mas…" /><small>Deixe em branco para a IA escrever. Variáveis: {'{empresa}'}, {'{nota}'}, {'{avaliacoes}'}.</small></label>
             <label className="field"><span>Abordagem B (teste A/B)</span><input id="cf-b" className="input" value={edit.variantB} onChange={(e) => setEdit({ ...edit, variantB: e.target.value })} placeholder="Opcional" /></label>

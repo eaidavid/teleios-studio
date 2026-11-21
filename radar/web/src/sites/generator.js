@@ -1,7 +1,7 @@
 // Catálogo do construtor e o "diretor de arte" que gera uma prévia a partir da direção escolhida.
 // Hoje roda com regras locais; no backend, a IA (Claude) vai preencher o mesmo formato,
 // escrevendo os textos com base no site/Instagram reais do cliente.
-import { derivePalettes } from './colors';
+import { derivePalettes } from './colors.js';
 
 export const HEROES = {
   centro: 'Centralizado',
@@ -113,7 +113,7 @@ export function generateDesign(lead, dir, seed = Date.now()) {
   return {
     style: styleKey,
     headline: brief?.headline || `${lead.name}: qualidade aprovada pela cidade.`,
-    sub: brief?.sub || `${lead.category} em ${lead.neighborhood}, ${lead.city}.`,
+    sub: brief?.sub || `${lead.category} em ${[lead.neighborhood, lead.city].filter(Boolean).join(', ')}.`,
     cta: CTA[goal],
     about: content.about,
     services: content.services,

@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Bot, Columns3, Home, LayoutTemplate, Map as MapIcon, Menu, MessagesSquare, Plus, Search, Settings, Target, Users,
+  Bot, Columns3, Home, LayoutTemplate, LogOut, Map as MapIcon, Menu, MessagesSquare, Plus, Search, Settings, Target, Users,
 } from 'lucide-react';
-import { Logo, Toasts, ease } from './components/ui';
+import { Logo, Toasts, ease, toast } from './components/ui';
+import Login from './pages/Login';
 import CommandPalette from './components/CommandPalette';
 import NumberHealth from './components/NumberHealth';
 import LeadDrawer from './pages/LeadDrawer';
@@ -17,7 +18,7 @@ import Campanhas from './pages/Campanhas';
 import Sites from './pages/Sites';
 import Robos from './pages/Robos';
 import Config from './pages/Config';
-import { useStore } from './data/store';
+import { boot, logout, useStore } from './data/store';
 
 const NAV = [
   { group: 'Comercial', items: [
@@ -54,6 +55,19 @@ function useHashRoute() {
 }
 
 export default function App() {
+  const session = useStore((s) => s.session);
+  useEffect(() => {
+    boot();
+    const f = (e) => toast(`Não foi possível salvar: ${e.detail}`);
+    addEventListener('radar-error', f);
+    return () => removeEventListener('radar-error', f);
+  }, []);
+  if (session.mode === 'loading') return <div className="boot"><Logo /></div>;
+  if (session.mode === 'login') return <><Login /><Toasts /></>;
+  return <Shell session={session} />;
+}
+
+function Shell({ session }) {
   const { view, param } = useHashRoute();
   const [lead, setLead] = useState(null);
   const [form, setForm] = useState(null); // null | {} (novo) | lead (editar)
@@ -103,9 +117,10 @@ export default function App() {
               <Search size={16} /><span>Buscar leads, telas ou ações</span><span className="kbd">Ctrl K</span>
             </button>
             <span className="grow" />
-            <span className="demo">Dados de demonstração</span>
+            {session.mode === 'demo' && <span className="demo">Dados de demonstração</span>}
             <button type="button" className="btn btn-primary btn-sm" onClick={() => setForm({})}><Plus size={15} strokeWidth={2.4} />Novo lead</button>
-            <span className="avatar sm" style={{ background: 'var(--surface-4)', color: 'var(--text)' }} aria-label="David">D</span>
+            <span className="avatar sm" style={{ background: 'var(--surface-4)', color: 'var(--text)' }} aria-label={session.user?.email || 'David'} title={session.user?.email}>{(session.user?.name || 'D')[0].toUpperCase()}</span>
+            {session.mode === 'api' && <button type="button" className="btn-icon" onClick={logout} aria-label="Sair" title="Sair"><LogOut size={16} /></button>}
           </header>
 
           <AnimatePresence mode="wait">
