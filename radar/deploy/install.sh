@@ -68,11 +68,11 @@ networks:
 YML
 
 say "Construindo e subindo (a primeira vez leva alguns minutos)"
-docker compose -p teleios-radar -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+docker compose -p teleios-radar -f docker-compose.yml -f docker-compose.vps.yml up -d --build </dev/null
 
 say "Esperando o Radar responder"
 for i in $(seq 1 60); do
-  if docker compose -p teleios-radar exec -T radar wget -qO- http://localhost:3000/api/health >/dev/null 2>&1; then OK=1; break; fi
+  if docker compose -p teleios-radar exec -T radar wget -qO- http://localhost:3000/api/health </dev/null >/dev/null 2>&1; then OK=1; break; fi
   sleep 3
 done
 [ "${OK:-0}" = 1 ] || { echo "O Radar não respondeu. Veja: docker compose -p teleios-radar logs radar --tail 80"; exit 1; }
