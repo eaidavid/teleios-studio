@@ -116,14 +116,14 @@ export function autoSpec(lead, dir = {}) {
   const motion = dir.motion && dir.motion !== 'ia' ? { sutil: 'sutil', equilibrada: 'equilibrado', marcante: 'marcante' }[dir.motion] : st.movimento;
   const c = COPY[lead.category] || GENERIC(lead);
   const name = lead.brandName || lead.name;
-  const hasPhotos = (lead.gallery?.length || 0) + (lead.sitePhotos?.length || 0) > 0;
+  const hasPhotos = (lead.gallery?.length || 0) + (lead.sitePhotos?.length || 0) + (lead.stockPhotos?.length || 0) > 0;
   const brief = lead.analysis?.brief;
   const [soft, strong] = brief?.headline ? splitTitle(brief.headline) : c.titulo;
   const proof = lead.rating ? `Nota ${Number(lead.rating).toFixed(1).replace('.', ',')} no Google, com ${lead.reviews} avaliações.` : '';
   const where = [lead.neighborhood !== lead.city ? lead.neighborhood : '', lead.city].filter(Boolean).join(', ');
 
   const secoes = [];
-  const heroV = hasPhotos ? (dir.hero === 'dividido' || dir.hero === 'foto' ? dir.hero : pickBy(['foto', 'dividido', 'foto'], seed, 'hero')) : 'tipografico';
+  const heroV = hasPhotos ? (['dividido', 'foto', 'moldura', 'colagem'].includes(dir.hero) ? dir.hero : pickBy(['foto', 'dividido', 'moldura', 'colagem', 'moldura'], seed, 'hero')) : 'tipografico';
   const signature = pickBy(hasPhotos ? ['manifesto', 'galeria', 'empilhados'] : ['cartaz', 'manifesto', 'empilhados'], seed, 'sig');
   const svcVariant = signature === 'empilhados' ? 'empilhados' : pickBy(hasPhotos ? ['cartoes', 'indice'] : ['indice', 'cartoes'], seed, 'svc');
   secoes.push({ tipo: 'topo', variante: heroV, rotulo: `${lead.category || ''} · ${lead.city || ''}`,

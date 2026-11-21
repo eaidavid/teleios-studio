@@ -14,7 +14,7 @@ Uma prévia pronta para venda tem **8 a 11 seções**, com ritmo de fundos (clar
 ## Seções e campos
 | tipo | campos | dica |
 |---|---|---|
-| `topo` | variante (`foto` \| `dividido` \| `tipografico`), rotulo, titulo_suave, titulo_forte, subtitulo, cta{texto}, cta2{texto,link}, foto, abas[3], selo{numero,texto} | `foto` só com foto boa; sem fotos → `tipografico` |
+| `topo` | variante (`foto` \| `moldura` \| `colagem` \| `dividido` \| `tipografico`), rotulo, titulo_suave, titulo_forte, subtitulo, cta{texto}, cta2{texto,link}, foto, abas[3], selo{numero,texto} | `moldura` = foto emoldurada + cartão de avaliação real (muito premium); `colagem` = 3 fotos sobrepostas; sem fotos → `tipografico` |
 | `numeros` | itens[{valor, legenda, prefixo?, sufixo?}] | só números reais (nota, nº de avaliações, anos se informado, "48h" de prazo só se dito) |
 | `sobre` | rotulo, titulo_suave, titulo_forte, textos[], fotos[2], selo{numero,texto}, link{texto}, foto_direita | 2 parágrafos curtos e específicos |
 | `manifesto` | rotulo, texto | 1 frase longa e verdadeira; palavras acendem com a rolagem |

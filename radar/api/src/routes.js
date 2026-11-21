@@ -7,6 +7,7 @@ import { hunt, huntStatus } from './cacador.js';
 import { renderPremium } from './templates/premium.js';
 import { autoSpec } from './templates/autospec.js';
 import { briefMd } from './templates/brief.js';
+import { ensurePhotos } from './stock.js';
 import { waStatus, connect as waConnect, logout as waLogout, sendNow, enqueue, sentTodayCount } from './whatsapp.js';
 
 const SPLIT = ['id', 'stage', 'campaign', 'createdAt'];
@@ -264,8 +265,9 @@ export function registerRoutes(app) {
     const l = await getLead(Number(req.params.lead));
     if (!l) return reply.code(404).send({ error: 'Lead não encontrado.' });
     const direction = req.body?.direction || {};
-    const spec = req.body?.spec || autoSpec(l, direction);
-    const html = renderPremium(spec, l);
+    const lp = await ensurePhotos(l, patchLead);
+    const spec = req.body?.spec || autoSpec(lp, direction);
+    const html = renderPremium(spec, lp);
     const site = await upsertSite({ lead: l.id, data: { premium: spec }, direction: { ...direction, builder: true, conceito: spec.conceito }, html });
     await logActivity('construtor', `Construtor montou o site de ${l.brandName || l.name}`);
     return { ...site, html: undefined, hasHtml: true };

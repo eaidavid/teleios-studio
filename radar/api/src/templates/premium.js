@@ -91,7 +91,11 @@ function theme(t = {}, lead) {
 export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
   const th = theme(spec.tema, lead);
   const name = spec.marca?.nome || lead.brandName || lead.name;
-  const photos = [...new Set([...(spec.fotos || []), ...(lead.gallery || []), ...(lead.sitePhotos || [])].filter((u) => /^https?:\/\//.test(u || '')))];
+  const realPhotos = [...new Set([...(spec.fotos || []), ...(lead.gallery || []), ...(lead.sitePhotos || [])].filter((u) => /^https?:\/\//.test(u || '')))];
+  // Sem fotos reais suficientes, entram fotos de banco gratuito (marcadas como ilustrativas)
+  const stock = realPhotos.length >= 3 ? [] : (lead.stockPhotos || []).map((p) => p.url).filter((u) => /^https?:\/\//.test(u || ''));
+  const photos = [...realPhotos, ...stock];
+  const illustrative = stock.length > 0;
   let pi = 0;
   const nextPhoto = () => photos.length ? photos[pi++ % photos.length] : null;
   const wa = waLink(lead.phone, spec.whatsapp_texto || `Oi! Vi o site da ${name} e quero mais informações.`);
@@ -132,13 +136,22 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
       case 'topo': {
         const v = s.variante || (photos.length ? 'foto' : 'tipografico');
         const eyebrow = has(s.rotulo) ? `<p class="eyebrow" data-reveal>${motif}${esc(s.rotulo)}</p>` : '';
-        const ctas = `<div class="ctas" data-reveal data-delay="0.5">${ctaBtn(s.cta || { texto: 'Falar no WhatsApp' })}${s.cta2 ? ctaBtn(s.cta2, 'ghost') : ''}</div>${v !== 'tipografico' ? trust : ''}`;
+        const ctas = `<div class="ctas" data-reveal data-delay="0.5">${ctaBtn(s.cta || { texto: 'Falar no WhatsApp' })}${s.cta2 ? ctaBtn(s.cta2, 'ghost') : ''}</div>${v !== 'tipografico' && v !== 'moldura' ? trust : ''}`;
         const sub = has(s.subtitulo) ? `<p class="lead" data-reveal data-delay="0.35">${rich(s.subtitulo)}</p>` : '';
         const tabs = s.abas?.length ? `<div class="hero-tabs" data-reveal data-delay="0.7">${s.abas.slice(0, 3).map((a, i) => `<span><i>0${i + 1}</i><b>${esc(a)}</b></span>`).join('')}</div>` : '';
         if (v === 'foto') {
           heroIsPhoto = true;
           const p = s.foto || nextPhoto();
           sections.push(`<header class="hero hero-photo"${idAttr}><div class="bg" data-parallax="0.12">${img(p, s.foto_alt, 'loading="eager" fetchpriority="high"')}</div><div class="wrap">${eyebrow}${title('h1', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}${sub}${ctas}${tabs}</div></header>`);
+        } else if (v === 'moldura') {
+          const p = s.foto || nextPhoto();
+          const rv = (lead.reviewSamples || []).find((r) => String(r.text || '').length > 40);
+          const card = rv ? `<figure class="review-card" style="margin:0" data-reveal="right" data-delay="0.8"><span class="stars">★★★★★</span><p>“${esc(String(rv.text).replace(/\s+/g, ' ').slice(0, 150).replace(/\s+\S*$/, ''))}…”</p><figcaption class="who"><b>${esc(rv.name)}</b><span>Google</span></figcaption></figure>` : '';
+          sections.push(`<header class="hero hero-frame"${idAttr}><div class="frame">${img(p, s.foto_alt, 'loading="eager" fetchpriority="high"')}<div class="inner"><div>${eyebrow}${title('h1', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}${sub}${ctas}</div>${card}</div></div></header>`);
+        } else if (v === 'colagem') {
+          const ps = [s.foto || nextPhoto(), nextPhoto(), nextPhoto()];
+          const chip = lead.rating ? `<span class="chip" data-reveal data-delay="0.9">★ <b>${Number(lead.rating).toFixed(1).replace('.', ',')}</b> · ${lead.reviews} avaliações</span>` : '';
+          sections.push(`<header class="hero hero-collage ${bgCls(s)}"${idAttr}><div class="wrap"><div class="grid"><div>${eyebrow}${title('h1', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}${sub}${ctas}</div><div class="collage">${ps.map((p, i) => (p ? `<figure class="c${i + 1}" data-curtain data-delay="${0.15 + i * 0.15}">${img(p, '', i === 0 ? 'loading="eager"' : '')}</figure>` : '')).join('')}${chip}</div></div></div></header>`);
         } else if (v === 'dividido') {
           const p = s.foto || nextPhoto();
           const badge = s.selo ? `<div class="badge" data-reveal="left" data-delay="0.8"><b>${esc(s.selo.numero)}</b><span>${esc(s.selo.texto)}</span></div>` : '';
@@ -264,9 +277,10 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
 
   const r = spec.rodape || {};
   const giant = r.palavra_gigante || name.split(' ')[0];
-  const foot = `<footer class="foot dark ${th.texture !== 'nenhuma' ? `tex-${th.texture}` : ''}"><div class="wrap"><div class="cols"><div><p style="font:600 22px/1.1 var(--f-display);letter-spacing:-.02em;margin-bottom:12px">${esc(name)}</p><p class="soft" style="max-width:34ch">${esc(r.frase || `${lead.category || ''} em ${lead.city || ''}`)}</p></div><div><h4>Navegação</h4>${menu.map(([t, a]) => `<a href="#${esc(a)}">${esc(t)}</a>`).join('')}</div><div><h4>Contato</h4>${lead.phone ? `<a href="${esc(wa || '#')}" target="_blank" rel="noopener">${esc(lead.phone)}</a>` : ''}${lead.instagram ? `<a href="https://instagram.com/${esc(lead.instagram.replace('@', ''))}" target="_blank" rel="noopener">${esc(lead.instagram)}</a>` : ''}${lead.email ? `<a href="mailto:${esc(lead.email)}">${esc(lead.email)}</a>` : ''}</div><div><h4>Endereço</h4><span>${esc(lead.address || lead.city || '')}</span>${lead.hours ? `<span>${esc(lead.hours)}</span>` : ''}</div></div><div class="giant" data-reveal aria-hidden="true">${esc(giant)}<span class="acc">.</span></div><div class="bottom"><span>© ${new Date().getFullYear()} ${esc(name)}</span><span>Site feito pela Agência Teleios</span></div></div></footer>`;
+  const foot = `<footer class="foot dark ${th.texture !== 'nenhuma' ? `tex-${th.texture}` : ''}"><div class="wrap"><div class="cols"><div><p style="font:600 22px/1.1 var(--f-display);letter-spacing:-.02em;margin-bottom:12px">${esc(name)}</p><p class="soft" style="max-width:34ch">${esc(r.frase || `${lead.category || ''} em ${lead.city || ''}`)}</p></div><div><h4>Navegação</h4>${menu.map(([t, a]) => `<a href="#${esc(a)}">${esc(t)}</a>`).join('')}</div><div><h4>Contato</h4>${lead.phone ? `<a href="${esc(wa || '#')}" target="_blank" rel="noopener">${esc(lead.phone)}</a>` : ''}${lead.instagram ? `<a href="https://instagram.com/${esc(lead.instagram.replace('@', ''))}" target="_blank" rel="noopener">${esc(lead.instagram)}</a>` : ''}${lead.email ? `<a href="mailto:${esc(lead.email)}">${esc(lead.email)}</a>` : ''}</div><div><h4>Endereço</h4><span>${esc(lead.address || lead.city || '')}</span>${lead.hours ? `<span>${esc(lead.hours)}</span>` : ''}</div></div><div class="giant" data-reveal aria-hidden="true">${esc(giant)}<span class="acc">.</span></div><div class="bottom"><span>© ${new Date().getFullYear()} ${esc(name)}</span>${illustrative ? '<span>Imagens ilustrativas de bancos gratuitos</span>' : ''}<span>Site feito pela Agência Teleios</span></div></div></footer>`;
 
-  const logo = spec.marca?.logo_svg || (spec.marca?.logo_url ? `<img src="${esc(spec.marca.logo_url)}" alt="${esc(name)}">` : esc(name));
+  const initials = name.replace(/[^\p{L}\p{N} ]/gu, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const logo = spec.marca?.logo_svg || (spec.marca?.logo_url ? `<img src="${esc(spec.marca.logo_url)}" alt="${esc(name)}">` : `<span class="mono" aria-hidden="true">${esc(initials)}</span>${esc(name)}`);
   const links = menu.map(([t, a]) => `<a href="#${esc(a)}">${esc(t)}</a>`).join('');
   const nav = `<div class="progress" id="prog" aria-hidden="true"></div><div class="nav ${heroIsPhoto ? 'on-photo' : ''}" id="nav"><div class="wrap"><a class="brand" href="#" aria-label="${esc(name)} — início">${logo}</a><nav aria-label="Seções">${links}</nav>${ctaBtn(spec.menu_cta || { texto: 'Orçamento' })}${menu.length ? '<button class="burger" type="button" aria-label="Abrir menu" aria-controls="sheet" aria-expanded="false" id="burger"><span></span></button>' : ''}</div></div>`
     + (menu.length ? `<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Menu"><div class="top"><span style="font:600 20px var(--f-display)">${esc(name)}</span><button class="close" type="button" aria-label="Fechar menu" id="sheetClose">×</button></div><nav>${links}</nav><div class="foot-cta">${ctaBtn(spec.menu_cta || { texto: 'Falar no WhatsApp' }, 'lg')}</div></div>` : '');

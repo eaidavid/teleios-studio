@@ -37,7 +37,9 @@ export function briefMd(lead, { site, direction, notes, recent } = {}) {
     for (const r of lead.reviewSamples.slice(0, 6)) md += `- **${r.name}** (${r.rating}★): "${String(r.text).replace(/\s+/g, ' ').slice(0, 280)}"\n`;
     md += '\n';
   }
-  md += `## Fotos reais (${photos.length})\n${photos.length ? photos.slice(0, 14).map((u) => `- ${u}`).join('\n') : '- Nenhuma: use topo tipográfico, cartaz e empilhados com símbolo, mais um bloco html autoral.'}\n\n`;
+  md += `## Fotos reais (${photos.length})\n${photos.length ? photos.slice(0, 14).map((u) => `- ${u}`).join('\n') : '- Nenhuma real. O montar_site completa com fotos de banco gratuito (ilustrativas). Para escolher melhor, use buscar_fotos com uma busca em inglês ligada ao conceito.'}\n`;
+  if (lead.stockPhotos?.length && photos.length < 3) md += `- Fotos ilustrativas já escolhidas: ${lead.stockPhotos.length}\n`;
+  md += '\n';
   if (direction || site?.direction || notes) {
     const d = direction || site?.direction || {};
     md += `## Direção escolhida no Radar\n${line('Estilo', d.style)}${line('Movimento', d.motion)}${line('Topo', d.hero)}${line('Objetivo', d.goal)}${line('Seções desejadas', d.sections?.join(', '))}${line('Cores', d.colors?.join(', '))}${line('Observações', d.notes || notes)}\n`;
