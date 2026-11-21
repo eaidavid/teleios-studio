@@ -33,7 +33,7 @@ export async function claimNext() {
 const MAX_ATTEMPTS = 3;
 
 /* Resultado do robô: aplicada | precisa_voce | erro (tenta de novo com espera crescente até 3 vezes) */
-export async function report(id, { status, text, error, questions, screenshot }) {
+export async function report(id, { status, text, error, questions, screenshot, filled }) {
   const { rows } = await q('select * from applications where id = $1', [id]);
   const app = rows[0];
   if (!app) return null;
@@ -48,12 +48,13 @@ export async function report(id, { status, text, error, questions, screenshot })
       [id, last ? 'falhou' : 'aguardando', error || 'Erro desconhecido', String(15 * 2 ** (app.attempts - 1))],
     );
   }
-  await addLog(id, text || status, { error: error || undefined, questions: questions || undefined, screenshot: screenshot || undefined });
+  await addLog(id, text || status, { error: error || undefined, questions: questions?.length ? questions : undefined, screenshot: screenshot || undefined, filled: filled?.length ? filled.slice(0, 60) : undefined });
   return true;
 }
 
 export async function setStatus(id, status, text) {
   await q('update applications set status = $2, locked_at = null, next_run_at = now(), updated_at = now() where id = $1', [id, status]);
-  if (status === 'aguardando') await q('update applications set error = null where id = $1', [id]);
+  // Voltou para o robô por decisão sua: zera as tentativas (ensaios e perguntas não contam como erro)
+  if (status === 'aguardando') await q('update applications set error = null, attempts = 0 where id = $1', [id]);
   await addLog(id, text);
 }
