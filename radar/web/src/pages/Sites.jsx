@@ -4,6 +4,7 @@ import {
   ChevronDown, Compass, Copy, Eye, EyeOff, GripVertical, LayoutTemplate, Monitor, Palette, Play, Send, Smartphone, Sparkles, Type, Wand2,
 } from 'lucide-react';
 import { actions, useStore } from '../data/store';
+import { AskClaude } from '../components/ClaudeQueue';
 import { useApp } from '../App';
 import { Avatar, Segmented, ease, toast } from '../components/ui';
 import Preview from '../sites/Preview';
@@ -43,7 +44,7 @@ export default function Sites() {
   const [mode, setMode] = useState(site ? 'edit' : 'empty'); // empty | wizard | edit
   const [device, setDevice] = useState('desk');
   const [replay, setReplay] = useState(0);
-  useEffect(() => { setMode(sites.some((s) => s.lead === leadId) ? 'edit' : 'empty'); }, [leadId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setMode(sites.some((s) => s.lead === leadId) ? 'edit' : 'empty'); }, [leadId, sites.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const d = site?.data;
   const save = (data, extra = {}) => actions.saveSite({ ...site, lead: leadId, data, ...extra });
@@ -99,7 +100,11 @@ export default function Sites() {
           <div className="site-empty-art">{[0, 1, 2].map((i) => <motion.span key={i} animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, delay: i * 0.3 }} />)}</div>
           <b style={{ font: '600 20px var(--f-display)' }}>Este lead ainda não tem prévia</b>
           <p className="muted" style={{ margin: 0, maxWidth: '52ch', textAlign: 'center' }}>Diga a direção (identidade, estilo, animações e seções) e a IA monta a primeira versão. Depois você ajusta tudo no editor.</p>
-          <button type="button" className="btn btn-primary" onClick={() => setMode('wizard')}><Sparkles size={15} />Pedir para a IA criar</button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button type="button" className="btn btn-primary" onClick={() => setMode('wizard')}><Sparkles size={15} />Montar no construtor</button>
+            <AskClaude kind="previa" leads={[lead.id]} label="Pedir ao Claude" className="btn btn-ghost" />
+          </div>
+          <small className="faint">O Claude cria quando você disser no chat dele: “Faz os pedidos do Radar”. A prévia aparece aqui para você ajustar.</small>
         </motion.div>
       )}
 

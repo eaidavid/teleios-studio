@@ -56,6 +56,17 @@ create table if not exists kv (
   key text primary key,
   value jsonb not null
 );
+create table if not exists requests (
+  id serial primary key,
+  kind text not null,
+  lead_id int references leads(id) on delete cascade,
+  payload jsonb not null default '{}',
+  status text not null default 'pending',
+  result jsonb,
+  created_at timestamptz not null default now(),
+  done_at timestamptz
+);
+create index if not exists requests_status_idx on requests(status);
 create table if not exists activity (
   id serial primary key,
   bot text not null,
@@ -78,4 +89,11 @@ export async function kvGet(key, fallback) {
 }
 export async function kvSet(key, value) {
   await q('insert into kv(key, value) values ($1, $2) on conflict (key) do update set value = excluded.value', [key, JSON.stringify(value)]);
+}
+
+export const requestRow = (r) => ({ id: r.id, kind: r.kind, lead: r.lead_id, payload: r.payload, status: r.status, result: r.result, createdAt: new Date(r.created_at).getTime(), doneAt: r.done_at ? new Date(r.done_at).getTime() : null });
+
+/* Fecha os pedidos pendentes de um tipo para um lead (ex.: prévia criada) */
+export async function completeRequests(kind, lead, result) {
+  await q("update requests set status = 'done', result = $3, done_at = now() where kind = $1 and lead_id = $2 and status = 'pending'", [kind, lead, result || {}]);
 }

@@ -5,7 +5,9 @@ import { timingSafeEqual } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
-import { q, leadRow, siteRow } from './db.js';
+import { q, leadRow, siteRow, requestRow, completeRequests } from './db.js';
+import { hunt, huntStatus } from './cacador.js';
+import { CATEGORIES } from '../../web/src/data/seed.js';
 import { getLead, patchLead, upsertSite, previewUrl, logActivity } from './routes.js';
 import { STAGES } from '../../web/src/data/seed.js';
 import { BLOCKS, HEROES, FOOTERS, FONTS, RADIUS, ANIMS, TEXTS, STYLES, MOTIONS, GOALS, generateDesign } from '../../web/src/sites/generator.js';
@@ -22,7 +24,7 @@ const brief = (l) => ({
 });
 
 function buildServer() {
-  const server = new McpServer({ name: 'teleios-radar', version: '1.0.0' });
+  const server = new McpServer({ name: 'teleios-radar', version: '1.0.0' }, { instructions: 'Radar de prospecção da Agência Teleios. Quando o usuário pedir para fazer os pedidos/a fila do Radar, chame ver_fila e atenda cada pedido. Escreva em português do Brasil, tom próximo e direto.' });
 
   server.registerTool('buscar_leads', {
     description: 'Lista empresas do funil do Radar. Filtre por texto, etapa, categoria ou cidade. Use para achar o lead antes de analisar ou criar uma prévia.',
@@ -79,7 +81,8 @@ function buildServer() {
     if (briefing) a.brief = { ...(a.brief || {}), ...briefing };
     await patchLead(id, { analysis: a });
     await logActivity('analista', `Claude analisou ${l.name}`);
-    return text('Análise salva no Radar.');
+    await completeRequests('analise', id, { by: 'claude' });
+    return text('Análise salva no Radar. Pedido de análise deste lead marcado como feito.');
   });
 
   server.registerTool('mover_etapa', {
@@ -148,6 +151,7 @@ function buildServer() {
     }
     const site = await upsertSite({ lead: lead_id, data, direction: dir, html });
     await logActivity('analista', `Claude criou a prévia de ${l.name}`);
+    await completeRequests('previa', lead_id, { link: site.url });
     return text({ ok: true, link: site.url, editar_no_radar: `${process.env.PUBLIC_URL || ''}/#sites-${lead_id}`, modo: html ? 'html' : 'construtor' });
   });
 
@@ -158,6 +162,56 @@ function buildServer() {
     const { rows } = await q("select s.slug, s.lead_id, s.sent_at, s.updated_at, l.data->>'name' as nome from sites s join leads l on l.id = s.lead_id order by s.updated_at desc limit 100");
     return text(rows.map((r) => ({ lead_id: r.lead_id, empresa: r.nome, link: previewUrl(r.slug), enviada: !!r.sent_at })));
   });
+
+  server.registerTool('ver_fila', {
+    description: [
+      'COMECE POR AQUI quando o usuário disser "faz os pedidos do Radar", "a fila", "o que tem pra fazer" ou parecido.',
+      'Lista os pedidos pendentes que ele deixou no Radar. Tipos:',
+      '"analise" (analise o lead com ver_lead e grave com salvar_analise),',
+      '"previa" (crie o site-prévia com criar_previa; leia ver_lead antes e use as cores da marca; siga payload.observacoes se houver),',
+      '"busca" (pedido em texto livre da Reunião da manhã: interprete, use criar_campanha com buscar_agora=true e depois concluir_pedido).',
+      'Análise e prévia são marcadas como feitas automaticamente; busca, use concluir_pedido. No fim, devolva um resumo com os links.',
+    ].join(' '),
+    inputSchema: {},
+  }, async () => {
+    const { rows } = await q("select r.*, l.data->>'name' as nome from requests r left join leads l on l.id = r.lead_id where r.status = 'pending' order by r.created_at");
+    if (!rows.length) return text('Fila vazia. Nada pendente no Radar.');
+    return text(rows.map((r) => ({ ...requestRow(r), empresa: r.nome || undefined })));
+  });
+
+  server.registerTool('concluir_pedido', {
+    description: 'Marca um pedido da fila como feito (ou falhou), com uma nota curta do que foi feito.',
+    inputSchema: { id: z.number().int(), resultado: z.string(), falhou: z.boolean().optional() },
+  }, async ({ id, resultado, falhou }) => {
+    const { rowCount } = await q("update requests set status = $2, result = $3, done_at = now() where id = $1", [id, falhou ? 'failed' : 'done', { nota: resultado }]);
+    return rowCount ? text('Pedido atualizado.') : fail('Pedido não encontrado.');
+  });
+
+  server.registerTool('criar_campanha', {
+    description: 'Cria uma campanha de prospecção no Radar e, se pedido, já dispara o Caçador. Use para atender pedidos do tipo "busca".',
+    inputSchema: {
+      nome: z.string().describe('Curto, ex.: "Clínicas de estética · Sorocaba"'),
+      busca: z.string().describe('Termo para o Google Maps, ex.: "clínica de estética em Sorocaba"'),
+      cidade: z.string(),
+      segmento: z.enum(Object.keys(CATEGORIES)).optional(),
+      filtros: z.array(z.string()).optional().describe('Ex.: "Sem site", "Nota ≥ 4,5", "Com WhatsApp"'),
+      buscar_agora: z.boolean().optional(),
+      motor: z.enum(['google', 'osm']).optional().describe('google (padrão, mais dados) ou osm (gratuito)'),
+    },
+  }, async ({ nome, busca, cidade, segmento, filtros = [], buscar_agora, motor = 'google' }) => {
+    const { rows } = await q('insert into campaigns(data) values ($1) returning id', [{ name: nome, query: busca, city: cidade, category: segmento, filters: filtros, status: 'running', variantA: '', variantB: '' }]);
+    const id = rows[0].id;
+    let busca_status = 'não iniciada';
+    if (buscar_agora) {
+      try { await hunt({ id, name: nome, query: busca, city: cidade, category: segmento }, { engine: motor, log: (t) => logActivity('cacador', t) }); busca_status = 'rodando (leva alguns minutos; acompanhe com status_busca)'; } catch (e) { busca_status = `não iniciou: ${e.message}`; }
+    }
+    return text({ campanha_id: id, busca: busca_status });
+  });
+
+  server.registerTool('status_busca', {
+    description: 'Mostra o andamento da busca do Caçador de uma campanha.',
+    inputSchema: { campanha_id: z.number().int() },
+  }, async ({ campanha_id }) => text(huntStatus(campanha_id) || { state: 'idle' }));
 
   return server;
 }

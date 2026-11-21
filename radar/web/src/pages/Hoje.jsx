@@ -7,6 +7,7 @@ import { actions, useStore } from '../data/store';
 import { analyze } from '../data/analysis';
 import { STAGES } from '../data/seed';
 import { useApp } from '../App';
+import ClaudeQueue, { PHRASE } from '../components/ClaudeQueue';
 import { Avatar, CountUp, Empty, Sparkline, ago, ease, itemAnim, listAnim, toast } from '../components/ui';
 
 export const BOT_ICON = { cacador: Radar, analista: ScanSearch, redator: PenLine, followup: Repeat, triagem: Inbox };
@@ -35,10 +36,11 @@ function Command() {
   const run = (e) => {
     e.preventDefault();
     if (!q.trim()) return;
-    setStep(0);
-    steps.forEach((_, i) => setTimeout(() => setStep(i + 1), 700 * (i + 1)));
-    setTimeout(() => toast('Campanha criada. O time começa a busca agora.'), 700 * steps.length + 100);
-    actions.saveCampaign({ name: q.length > 42 ? `${q.slice(0, 40)}…` : q, query: q, city: 'Sorocaba', filters: [], variantA: '', variantB: '' });
+    // Vai para a fila: o Claude interpreta o pedido, cria a campanha e dispara o Caçador
+    actions.request('busca', [], { texto: q.trim() }).then(() => {
+      setStep(0);
+      toast(`Pedido na fila do Claude. Diga a ele: "${PHRASE}"`);
+    }, (er) => toast(er.message));
   };
   return (
     <section className="card cmd" aria-labelledby="cmd-h">
@@ -50,26 +52,12 @@ function Command() {
       <form onSubmit={run}>
         <Sparkles size={18} />
         <input id="cmd" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Pedido para o time" placeholder="Ex.: clínicas de estética em Sorocaba sem site" />
-        <button className="btn btn-primary" type="submit"><Zap size={15} />Mandar o time</button>
+        <button className="btn btn-primary" type="submit"><Zap size={15} />Mandar para a fila</button>
       </form>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {SUGGESTIONS.map((s) => <button key={s} type="button" className="chip" onClick={() => setQ(s)}>{s}</button>)}
       </div>
-      <AnimatePresence>
-        {step >= 0 && (
-          <motion.div className="plan" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.4, ease }}>
-            {steps.map((s, i) => (
-              <motion.div key={s.name} className="plan-step" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08, duration: 0.4, ease }}>
-                <span className="ic" style={{ background: s.color }}><s.icon size={16} /></span>
-                <span className="label">{s.name}</span>
-                <b>{s.title}</b>
-                <span>{s.text}</span>
-                <span className="state">{step > i ? <><CheckCircle2 size={13} color="var(--green)" />Pronto</> : step === i ? <><Loader2 size={13} className="spin" />Trabalhando…</> : 'Na fila'}</span>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {step >= 0 && <p className="muted" style={{ margin: 0, fontSize: 13 }}>Na fila. O Claude vai criar a campanha, rodar o Caçador e analisar as empresas quando você disser “{PHRASE}”.</p>}
     </section>
   );
 }
@@ -107,6 +95,7 @@ export default function Hoje() {
       </div>
 
       <Command />
+      <ClaudeQueue />
 
       <motion.div className="kpis" variants={listAnim} initial="hidden" animate="show">
         {[

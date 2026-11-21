@@ -28,15 +28,16 @@ function fresh() {
     ],
     approvals: [{ lead: 5 }, { lead: 9 }],
     sites: [],
+    requests: [],
   };
 }
 
-const empty = () => ({ leads: [], campaigns: [], conversations: {}, control: {}, bots: seedBots, settings: seedSettings, sentToday: 0, activity: [], approvals: [], sites: [] });
+const empty = () => ({ requests: [], leads: [], campaigns: [], conversations: {}, control: {}, bots: seedBots, settings: seedSettings, sentToday: 0, activity: [], approvals: [], sites: [] });
 
 function loadLocal() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return { requests: [], ...JSON.parse(raw) };
   } catch { /* sem armazenamento disponível */ }
   return fresh();
 }
@@ -109,6 +110,8 @@ export async function boot() {
     set((s) => ({ ...s, session: { mode: 'api', user } }));
     await refresh();
   } catch { /* api() já pôs em modo login */ }
+  // Traz o que o Claude e o Caçador fizeram enquanto a tela está aberta
+  setInterval(() => { if (isApi() && document.visibilityState === 'visible' && Date.now() - lastEdit > 5000) refresh().catch(() => {}); }, 20000);
 }
 
 export async function login(email, password) {
@@ -132,6 +135,7 @@ function patchLead(id, fn) {
   sync(`/leads/${id}`, 'PATCH', patch);
 }
 const siteTimers = {};
+let lastEdit = 0; // evita que a atualização automática atropele uma edição em andamento
 
 export const actions = {
   reset() { if (!isApi()) set({ ...fresh(), session: state.session }); },
@@ -263,8 +267,27 @@ export const actions = {
     sync(`/settings/${section}`, 'PATCH', data);
   },
 
+  // Fila do Claude: pedidos que ele atende quando você diz "faz os pedidos do Radar"
+  async request(kind, leads = [], payload = {}) {
+    if (isApi()) {
+      const made = await api('/requests', 'POST', { kind, leads, payload });
+      set((s) => ({ ...s, requests: [...made.filter((r) => !s.requests.some((x) => x.id === r.id)), ...s.requests] }));
+      return made;
+    }
+    const base = nextId(state.requests?.length ? state.requests : [{ id: 0 }]);
+    const targets = kind === 'busca' ? [null] : leads.filter((l) => !state.requests.some((r) => r.status === 'pending' && r.kind === kind && r.lead === l));
+    const made = targets.map((lead, i) => ({ id: base + i, kind, lead, payload, status: 'pending', createdAt: Date.now() }));
+    set((s) => ({ ...s, requests: [...made, ...(s.requests || [])] }));
+    return made;
+  },
+  cancelRequest(id) {
+    set((s) => ({ ...s, requests: s.requests.filter((r) => r.id !== id) }));
+    sync(`/requests/${id}`, 'DELETE');
+  },
+
   // Sites-prévia (uma por lead; o servidor guarda pela empresa)
   saveSite(site) {
+    lastEdit = Date.now();
     const exists = state.sites.some((x) => x.lead === site.lead);
     set((s) => (exists
       ? { ...s, sites: s.sites.map((x) => (x.lead === site.lead ? { ...x, ...site } : x)) }

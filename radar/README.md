@@ -68,7 +68,9 @@ Ferramentas disponíveis:
 - `criar_previa`, que devolve o link público `/p/<empresa>`
 - `listar_previas`
 
-Exemplo de pedido: *"Pegue os 5 leads sem prévia com maior oportunidade, analise cada um e crie a prévia usando as cores da marca."*
+**Fila do Claude:** no Radar, os botões "Pedir ao Claude" (lead, prévia, seleção em massa) e "Mandar para a fila" da Reunião da manhã guardam pedidos. No chat do Claude, diga **"Faz os pedidos do Radar"**: ele chama `ver_fila`, faz tudo e os links aparecem no painel. Ferramentas extras: `ver_fila`, `concluir_pedido`, `criar_campanha`, `status_busca`.
+
+Exemplo de pedido livre: *"Pegue os 5 leads sem prévia com maior oportunidade, analise cada um e crie a prévia usando as cores da marca."*
 
 ### Caçador
 Em Campanhas, use **Buscar agora** para rodar no Google Maps (gosom) ou **OSM** para rodar no OpenStreetMap, que é gratuito. A busca roda uma por vez, com ritmo baixo e sem rodízio de proxy. Empresas repetidas são ignoradas. Depois da busca, o Radar visita o site de cada empresa para pegar as cores da marca, o Instagram e o e-mail, além de checar celular, velocidade e agendamento.

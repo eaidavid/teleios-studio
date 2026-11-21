@@ -185,6 +185,8 @@ export default function Leads() {
         {sel.length > 0 && (
           <motion.div className="bulk" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.3, ease }}>
             <b className="tnum">{sel.length} selecionado{sel.length > 1 ? 's' : ''}</b>
+            <AskClaude kind="previa" leads={sel} label="Prévias com o Claude" />
+            <AskClaude kind="analise" leads={sel} label="Analisar com o Claude" />
             <Popover align="right" trigger={(t) => <button type="button" className="btn btn-ghost btn-sm" onClick={t}>Mover para…<ChevronDown size={13} /></button>}>
               {(close) => STAGES.map((s) => <button type="button" key={s.id} className="opt" onClick={() => { actions.moveLeads(sel, s.id); toast(`${sel.length} movidos para ${s.name}`); setSel([]); close(); }}><i style={{ width: 8, height: 8, borderRadius: 9, background: s.color }} />{s.name}</button>)}
             </Popover>

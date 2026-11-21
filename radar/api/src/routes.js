@@ -1,6 +1,6 @@
 // Rotas REST. Espelham as ações do painel (web/src/data/store.js).
 import { randomBytes } from 'node:crypto';
-import { q, leadRow, siteRow, kvGet, kvSet } from './db.js';
+import { q, leadRow, siteRow, kvGet, kvSet, requestRow } from './db.js';
 import { analyze } from '../../web/src/data/analysis.js';
 import { seedBots, seedSettings } from '../../web/src/data/seed.js';
 import { hunt, huntStatus } from './cacador.js';
@@ -59,12 +59,13 @@ export function registerRoutes(app) {
 
   /* Estado completo para o painel */
   app.get('/api/state', async () => {
-    const [leads, campaigns, sites, convs, act] = await Promise.all([
+    const [leads, campaigns, sites, convs, act, reqs] = await Promise.all([
       q('select * from leads order by created_at desc'),
       q('select * from campaigns order by created_at desc'),
       q('select * from sites'),
       q('select * from conversations'),
       q('select bot, text, extract(epoch from at) * 1000 as at from activity order by at desc limit 30'),
+      q("select * from requests where status = 'pending' or done_at > now() - interval '3 days' order by created_at desc limit 200"),
     ]);
     const conversations = {}; const control = {};
     convs.rows.forEach((c) => { conversations[c.lead_id] = c.messages; control[c.lead_id] = c.control; });
@@ -80,6 +81,7 @@ export function registerRoutes(app) {
       approvals: await kvGet('approvals', []),
       activity: act.rows.map((a) => ({ ...a, at: Number(a.at) })),
       sentToday,
+      requests: reqs.rows.map(requestRow),
     };
   });
 
@@ -185,6 +187,31 @@ export function registerRoutes(app) {
   app.patch('/api/settings/:section', async (req) => {
     const s = await kvGet('settings', seedSettings);
     await kvSet('settings', { ...s, [req.params.section]: { ...s[req.params.section], ...req.body } });
+    return { ok: true };
+  });
+
+  /* ---------- Fila do Claude ---------- */
+  app.post('/api/requests', async (req, reply) => {
+    const { kind, leads = [], payload = {} } = req.body || {};
+    if (!['previa', 'analise', 'busca'].includes(kind)) return reply.code(400).send({ error: 'Tipo de pedido inválido.' });
+    const out = [];
+    const targets = kind === 'busca' ? [null] : leads.map(Number);
+    for (const lead of targets) {
+      if (!lead && payload.texto) {
+        const dup = await q("select * from requests where kind = 'busca' and status = 'pending' and lower(payload->>'texto') = lower($1)", [payload.texto]);
+        if (dup.rows[0]) { out.push(requestRow(dup.rows[0])); continue; }
+      }
+      if (lead) {
+        const dup = await q("select * from requests where kind = $1 and lead_id = $2 and status = 'pending'", [kind, lead]);
+        if (dup.rows[0]) { out.push(requestRow(dup.rows[0])); continue; }
+      }
+      const { rows } = await q('insert into requests(kind, lead_id, payload) values ($1, $2, $3) returning *', [kind, lead, payload]);
+      out.push(requestRow(rows[0]));
+    }
+    return out;
+  });
+  app.delete('/api/requests/:id', async (req) => {
+    await q("delete from requests where id = $1 and status = 'pending'", [Number(req.params.id)]);
     return { ok: true };
   });
 

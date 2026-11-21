@@ -5,6 +5,7 @@ import {
   NotebookPen, Pencil, Phone, RefreshCw, ScanSearch, Send, Sparkles, Star, Target, Trash2, User, X, Zap,
 } from 'lucide-react';
 import { actions, useStore } from '../data/store';
+import { AskClaude } from '../components/ClaudeQueue';
 import { STAGES } from '../data/seed';
 import { useApp } from '../App';
 import { Avatar, Drawer, Empty, ScoreRing, StageChip, ago, ease, money, toast } from '../components/ui';
@@ -41,7 +42,7 @@ function Analysis({ lead }) {
     );
   }
   if (!a) {
-    return <Empty icon={<ScanSearch size={22} />} title="Este lead ainda não foi analisado" action={<button type="button" className="btn btn-primary" onClick={run}><Sparkles size={15} />Analisar agora</button>}>A IA avalia site, redes, reputação e anúncios e diz qual serviço oferecer.</Empty>;
+    return <Empty icon={<ScanSearch size={22} />} title="Este lead ainda não foi analisado" action={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}><button type="button" className="btn btn-primary" onClick={run}><Sparkles size={15} />Análise rápida</button><AskClaude kind="analise" leads={[lead.id]} label="Análise com o Claude" className="btn btn-ghost" /></div>}>A IA avalia site, redes, reputação e anúncios e diz qual serviço oferecer.</Empty>;
   }
   return (
     <motion.div style={{ display: 'grid', gap: 18 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -54,6 +55,7 @@ function Analysis({ lead }) {
             <span className="pill ok"><BadgeDollarSign />{money(a.ticket.oneOff)} {a.ticket.monthly ? `+ ${money(a.ticket.monthly)}/mês` : ''}</span>
             <span className="pill cool">Força do negócio {a.strength}</span>
             <button type="button" className="link" onClick={run}><RefreshCw size={12} />Refazer análise</button>
+            <AskClaude kind="analise" leads={[lead.id]} label="Claude analisar" className="link" />
           </div>
         </div>
       </div>
@@ -111,7 +113,7 @@ function Analysis({ lead }) {
             <span className="muted" style={{ fontSize: 13 }}>{a.brief.sub}</span>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{a.brief.sections.map((s) => <span key={s} className="tag">{s}</span>)}</div>
             <span className="faint" style={{ fontSize: 12 }}>Tom: {a.brief.tone}</span>
-            <a className="btn btn-primary btn-sm" style={{ justifySelf: 'start' }} href={`#sites-${lead.id}`}><LayoutTemplate size={14} />Criar site-prévia</a>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><a className="btn btn-primary btn-sm" href={`#sites-${lead.id}`}><LayoutTemplate size={14} />Criar site-prévia</a><AskClaude kind="previa" leads={[lead.id]} label="Claude criar a prévia" /></div>
           </div>
         </div>
       </div>
