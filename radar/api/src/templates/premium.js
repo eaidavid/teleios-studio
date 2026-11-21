@@ -57,6 +57,7 @@ const I = {
   wa: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.5-.3Z"/></svg>',
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>',
   phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+  route: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8-8-2Z"/></svg>',
   ig: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>',
 };
 
@@ -116,6 +117,9 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
     return `<a class="btn ${cls}" href="${esc(href)}" ${href.startsWith('http') ? 'target="_blank" rel="noopener"' : ''} data-fill data-magnetic>${esc(c.texto || c)}${I.arrow}</a>`;
   };
 
+  const svcMsg = (x) => x.mensagem || `Oi! Vi o site da ${name} e quero saber sobre ${String(x.nome || '').toLowerCase()}.`;
+  const svcLink = (x) => { const h = waLink(lead.phone, svcMsg(x)); return h ? `<a class="go" href="${esc(h)}" target="_blank" rel="noopener">${esc(x.cta || 'Pedir pelo WhatsApp')}${I.arrow}</a>` : ''; };
+  const trust = lead.rating ? `<p class="trust" data-reveal data-delay="0.6"><span class="stars">★★★★★</span>Nota ${Number(lead.rating).toFixed(1).replace('.', ',')} · ${lead.reviews} avaliações no Google</p>` : '';
   const sections = [];
   const menu = [];
   let heroIsPhoto = false;
@@ -128,7 +132,7 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
       case 'topo': {
         const v = s.variante || (photos.length ? 'foto' : 'tipografico');
         const eyebrow = has(s.rotulo) ? `<p class="eyebrow" data-reveal>${motif}${esc(s.rotulo)}</p>` : '';
-        const ctas = `<div class="ctas" data-reveal data-delay="0.5">${ctaBtn(s.cta || { texto: 'Falar no WhatsApp' })}${s.cta2 ? ctaBtn(s.cta2, 'ghost') : ''}</div>`;
+        const ctas = `<div class="ctas" data-reveal data-delay="0.5">${ctaBtn(s.cta || { texto: 'Falar no WhatsApp' })}${s.cta2 ? ctaBtn(s.cta2, 'ghost') : ''}</div>${v !== 'tipografico' ? trust : ''}`;
         const sub = has(s.subtitulo) ? `<p class="lead" data-reveal data-delay="0.35">${rich(s.subtitulo)}</p>` : '';
         const tabs = s.abas?.length ? `<div class="hero-tabs" data-reveal data-delay="0.7">${s.abas.slice(0, 3).map((a, i) => `<span><i>0${i + 1}</i><b>${esc(a)}</b></span>`).join('')}</div>` : '';
         if (v === 'foto') {
@@ -173,10 +177,10 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
         if ((s.variante || 'indice') === 'cartoes') {
           const usePh = s.com_fotos !== false && photos.length > 0;
           body = `<div class="cards" style="--cols:${Math.min(3, items.length || 3)}" data-stagger="0.08" data-reveal-type="${rev || 'zoom'}">${items.map((x, i) => (usePh
-            ? `<article class="card"><div class="ph">${img(x.foto || nextPhoto(), x.nome)}</div><div class="body"><h3>${esc(x.nome)}</h3><p>${esc(x.texto)}</p></div></article>`
-            : `<article class="card noimg"><div class="body"><span class="big">${String(i + 1).padStart(2, '0')}</span><h3>${esc(x.nome)}</h3><p>${esc(x.texto)}</p></div></article>`)).join('')}</div>`;
+            ? `<article class="card"><div class="ph">${img(x.foto || nextPhoto(), x.nome)}</div><div class="body"><h3>${esc(x.nome)}</h3><p>${esc(x.texto)}</p>${svcLink(x)}</div></article>`
+            : `<article class="card noimg"><div class="body"><span class="big">${String(i + 1).padStart(2, '0')}</span><h3>${esc(x.nome)}</h3><p>${esc(x.texto)}</p>${svcLink(x)}</div></article>`)).join('')}</div>`;
         } else {
-          body = `<div class="index" data-stagger="0.07">${items.map((x, i) => `<a href="${esc(waLink(lead.phone, `Oi! Quero saber mais sobre ${x.nome}.`) || '#contato')}" target="_blank" rel="noopener"><span class="n">${String(i + 1).padStart(2, '0')}</span><div><h3>${esc(x.nome)}</h3>${has(x.texto) ? `<p>${esc(x.texto)}</p>` : ''}</div><span class="ar">${I.ne}</span></a>`).join('')}</div>`;
+          body = `<div class="index" data-stagger="0.07">${items.map((x, i) => `<a href="${esc(waLink(lead.phone, svcMsg(x)) || '#contato')}" target="_blank" rel="noopener"><span class="n">${String(i + 1).padStart(2, '0')}</span><div><h3>${esc(x.nome)}</h3>${has(x.texto) ? `<p>${esc(x.texto)}</p>` : ''}</div><span class="ar">${I.ne}</span></a>`).join('')}</div>`;
         }
         sections.push(`<section class="sec ${bgCls(s)}"${idAttr}><div class="wrap">${head}${body}</div></section>`);
         break;
@@ -237,7 +241,7 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
       case 'empilhados': {
         const items = (s.itens || []).slice(0, 5);
         if (!items.length) break;
-        sections.push(`<section class="sec ${bgCls(s)}"${idAttr}><div class="wrap"><div class="head"><div>${label(s.rotulo)}${title('h2', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}</div></div><div class="stack">${items.map((x, i) => { const p = x.foto || (s.com_fotos !== false ? nextPhoto() : null); return `<article class="${p ? '' : 'noimg'}" style="--i:${i}"><div class="txt"><span class="num">${String(i + 1).padStart(2, '0')}</span><div><h3>${esc(x.nome)}</h3>${has(x.texto) ? `<p>${esc(x.texto)}</p>` : ''}</div></div><div class="ph ${p ? '' : `tex-${th.texture !== 'nenhuma' ? th.texture : 'linhas'} noph`}">${p ? img(p, x.nome) : `<span class="glyph" aria-hidden="true">${esc(x.simbolo || String(i + 1).padStart(2, '0'))}</span><span class="cap" aria-hidden="true">${motif}${esc(x.nome)}</span>`}</div></article>`; }).join('')}</div></div></section>`);
+        sections.push(`<section class="sec ${bgCls(s)}"${idAttr}><div class="wrap"><div class="head"><div>${label(s.rotulo)}${title('h2', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}</div></div><div class="stack">${items.map((x, i) => { const p = x.foto || (s.com_fotos !== false ? nextPhoto() : null); return `<article class="${p ? '' : 'noimg'}" style="--i:${i}"><div class="txt"><span class="num">${String(i + 1).padStart(2, '0')}</span><div><h3>${esc(x.nome)}</h3>${has(x.texto) ? `<p>${esc(x.texto)}</p>` : ''}${svcLink(x)}</div></div><div class="ph ${p ? '' : `tex-${th.texture !== 'nenhuma' ? th.texture : 'linhas'} noph`}">${p ? img(p, x.nome) : `<span class="glyph" aria-hidden="true">${esc(x.simbolo || String(i + 1).padStart(2, '0'))}</span><span class="cap" aria-hidden="true">${motif}${esc(x.nome)}</span>`}</div></article>`; }).join('')}</div></div></section>`);
         break;
       }
       case 'comparacao': {
@@ -263,7 +267,11 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
   const foot = `<footer class="foot dark ${th.texture !== 'nenhuma' ? `tex-${th.texture}` : ''}"><div class="wrap"><div class="cols"><div><p style="font:600 22px/1.1 var(--f-display);letter-spacing:-.02em;margin-bottom:12px">${esc(name)}</p><p class="soft" style="max-width:34ch">${esc(r.frase || `${lead.category || ''} em ${lead.city || ''}`)}</p></div><div><h4>Navegação</h4>${menu.map(([t, a]) => `<a href="#${esc(a)}">${esc(t)}</a>`).join('')}</div><div><h4>Contato</h4>${lead.phone ? `<a href="${esc(wa || '#')}" target="_blank" rel="noopener">${esc(lead.phone)}</a>` : ''}${lead.instagram ? `<a href="https://instagram.com/${esc(lead.instagram.replace('@', ''))}" target="_blank" rel="noopener">${esc(lead.instagram)}</a>` : ''}${lead.email ? `<a href="mailto:${esc(lead.email)}">${esc(lead.email)}</a>` : ''}</div><div><h4>Endereço</h4><span>${esc(lead.address || lead.city || '')}</span>${lead.hours ? `<span>${esc(lead.hours)}</span>` : ''}</div></div><div class="giant" data-reveal aria-hidden="true">${esc(giant)}<span class="acc">.</span></div><div class="bottom"><span>© ${new Date().getFullYear()} ${esc(name)}</span><span>Site feito pela Agência Teleios</span></div></div></footer>`;
 
   const logo = spec.marca?.logo_svg || (spec.marca?.logo_url ? `<img src="${esc(spec.marca.logo_url)}" alt="${esc(name)}">` : esc(name));
-  const nav = `<div class="nav ${heroIsPhoto ? 'on-photo' : ''}" id="nav"><div class="wrap"><a class="brand" href="#">${logo}</a><nav aria-label="Seções">${menu.map(([t, a]) => `<a href="#${esc(a)}">${esc(t)}</a>`).join('')}</nav>${ctaBtn(spec.menu_cta || { texto: 'Orçamento' })}</div></div>`;
+  const links = menu.map(([t, a]) => `<a href="#${esc(a)}">${esc(t)}</a>`).join('');
+  const nav = `<div class="progress" id="prog" aria-hidden="true"></div><div class="nav ${heroIsPhoto ? 'on-photo' : ''}" id="nav"><div class="wrap"><a class="brand" href="#" aria-label="${esc(name)} — início">${logo}</a><nav aria-label="Seções">${links}</nav>${ctaBtn(spec.menu_cta || { texto: 'Orçamento' })}${menu.length ? '<button class="burger" type="button" aria-label="Abrir menu" aria-controls="sheet" aria-expanded="false" id="burger"><span></span></button>' : ''}</div></div>`
+    + (menu.length ? `<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Menu"><div class="top"><span style="font:600 20px var(--f-display)">${esc(name)}</span><button class="close" type="button" aria-label="Fechar menu" id="sheetClose">×</button></div><nav>${links}</nav><div class="foot-cta">${ctaBtn(spec.menu_cta || { texto: 'Falar no WhatsApp' }, 'lg')}</div></div>` : '');
+  const mapsHref = lead.mapsUrl || (lead.address ? `https://www.google.com/maps/search/${encodeURIComponent(`${name} ${lead.address}`)}` : null);
+  const actionbar = wa ? `<div class="actionbar" role="navigation" aria-label="Contato rápido"><a href="${esc(wa)}" target="_blank" rel="noopener">${I.wa}WhatsApp</a>${lead.phone ? `<a href="tel:+55${digits(lead.phone)}">${I.phone}Ligar</a>` : ''}${mapsHref ? `<a href="${esc(mapsHref)}" target="_blank" rel="noopener">${I.route}Rota</a>` : ''}</div>` : '';
   const agency = `https://wa.me/${agencyWa}?text=${encodeURIComponent(`Oi! Vi a prévia do site da ${name} e quero conversar.`)}`;
   const bar = `<div class="teleios-bar" id="tbar"><i></i><span>Prévia feita pela Agência Teleios para ${esc(name)}</span><a href="${agency}" target="_blank" rel="noopener">Quero este site</a><button type="button" aria-label="Fechar" onclick="this.parentNode.remove()">×</button></div>`;
   const waFloat = wa ? `<a class="wa-float" href="${esc(wa)}" target="_blank" rel="noopener" aria-label="Falar no WhatsApp">${I.wa}</a>` : '';
@@ -290,7 +298,19 @@ ${sections.join('\n')}
 </main>
 ${foot}
 ${waFloat}
+${actionbar}
 ${bar}
-<script>(function(){var n=document.getElementById('nav');function f(){n.classList.toggle('scrolled',scrollY>40)}f();addEventListener('scroll',f,{passive:true})})();</script>
+<script>(function(){
+var n=document.getElementById('nav'),pg=document.getElementById('prog'),links=[].slice.call(document.querySelectorAll('.nav nav a'));
+var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))}).filter(Boolean);
+function f(){var y=scrollY,h=document.documentElement.scrollHeight-innerHeight;n.classList.toggle('scrolled',y>40);if(pg)pg.style.transform='scaleX('+(h>0?y/h:0)+')';
+var cur=null;secs.forEach(function(s){if(s.getBoundingClientRect().top<innerHeight*.35)cur=s});links.forEach(function(a){a.classList.toggle('on',cur&&a.getAttribute('href')==='#'+cur.id)})}
+f();addEventListener('scroll',f,{passive:true});
+var b=document.getElementById('burger'),sh=document.getElementById('sheet'),c=document.getElementById('sheetClose');
+function t(o){if(!sh)return;sh.classList.toggle('open',o);b&&b.setAttribute('aria-expanded',o);document.body.style.overflow=o?'hidden':'';if(o&&c)c.focus()}
+b&&b.addEventListener('click',function(){t(true)});c&&c.addEventListener('click',function(){t(false)});
+sh&&sh.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){t(false)})});
+addEventListener('keydown',function(e){if(e.key==='Escape')t(false)});
+})();</script>
 </body></html>`;
 }

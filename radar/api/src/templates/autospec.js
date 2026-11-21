@@ -17,6 +17,23 @@ const SEG = {
   Imobiliária: { fundo: '#F2EFE9', fundo_alt: '#E6E1D7', tinta: '#14181D', acento: '#1E8A66', motivo: 'ponto', textura: 'grade' },
 };
 
+/* Paletas alternativas por segmento (o tema de SEG é a primeira opção) */
+const PALETTE_ALTS = {
+  'Móveis planejados': [
+    { fundo: '#F2F1EC', fundo_alt: '#E4E3DA', tinta: '#1F211D', acento: '#6F7F5C' },
+    { fundo: '#EFECE7', fundo_alt: '#E2DDD4', tinta: '#22252A', acento: '#C0682C' },
+    { fundo: '#17130F', fundo_alt: '#221C16', tinta: '#F1E9DD', acento: '#C99A66' },
+  ],
+  'Clínica de estética': [
+    { fundo: '#F5F1EC', fundo_alt: '#ECE4DA', tinta: '#2A2420', acento: '#9C7A5B' },
+    { fundo: '#F4F2F6', fundo_alt: '#E9E4EE', tinta: '#2A2233', acento: '#9A6FA8' },
+  ],
+  Odontologia: [{ fundo: '#F4F6F8', fundo_alt: '#E6ECF1', tinta: '#12263A', acento: '#2F7DD1' }],
+  Restaurante: [{ fundo: '#F6F1E7', fundo_alt: '#EAE1CF', tinta: '#1F2A1F', acento: '#B8612A' }, { fundo: '#1A1512', fundo_alt: '#251E19', tinta: '#F4ECDF', acento: '#E0A54A' }],
+  Barbearia: [{ fundo: '#121212', fundo_alt: '#1C1C1C', tinta: '#EDE6DA', acento: '#C98A4B' }],
+  Advocacia: [{ fundo: '#F4F3EF', fundo_alt: '#E7E5DE', tinta: '#1A1F1C', acento: '#5E7A62' }],
+};
+
 /* Tipografia e movimento por estilo (mesmos nomes do construtor) */
 const STYLE = {
   elegante: { fonte_titulo: 'Plus Jakarta Sans', fonte_texto: 'Inter', fonte_destaque: 'Instrument Serif', peso_titulo: 300, raio: 'suave', movimento: 'sutil' },
@@ -26,6 +43,24 @@ const STYLE = {
   minimalista: { fonte_titulo: 'Manrope', fonte_texto: 'Manrope', fonte_destaque: 'Instrument Serif', peso_titulo: 300, raio: 'reto', movimento: 'sutil' },
   luxo: { fonte_titulo: 'Cormorant Garamond', fonte_texto: 'Manrope', fonte_destaque: 'Cormorant Garamond', peso_titulo: 400, raio: 'reto', movimento: 'sutil' },
 };
+const FONT_ALTS = {
+  elegante: [['Plus Jakarta Sans', 'Inter', 'Instrument Serif'], ['Fraunces', 'Manrope', 'Fraunces'], ['Cormorant Garamond', 'Figtree', 'Cormorant Garamond']],
+  moderna: [['Sora', 'Inter', 'Instrument Serif'], ['Manrope', 'Manrope', 'Instrument Serif'], ['Figtree', 'Figtree', 'DM Serif Display'], ['Space Grotesk', 'Inter', null]],
+  ousada: [['Archivo', 'DM Sans', null], ['Unbounded', 'Inter', null], ['Bricolage Grotesque', 'DM Sans', null], ['Syne', 'Inter', null]],
+  acolhedora: [['Fraunces', 'Outfit', 'Fraunces'], ['DM Serif Display', 'Work Sans', 'Instrument Serif'], ['Bricolage Grotesque', 'Outfit', 'Instrument Serif']],
+  minimalista: [['Manrope', 'Manrope', 'Instrument Serif'], ['Inter', 'Inter', 'Instrument Serif'], ['Space Grotesk', 'Space Grotesk', null]],
+  luxo: [['Cormorant Garamond', 'Manrope', 'Cormorant Garamond'], ['Playfair Display', 'Inter', 'Playfair Display'], ['Fraunces', 'Inter', 'Fraunces']],
+};
+const STYLE_ALTS = {
+  'Móveis planejados': ['elegante', 'moderna', 'minimalista', 'acolhedora'], 'Clínica de estética': ['elegante', 'luxo', 'minimalista'],
+  Odontologia: ['moderna', 'minimalista', 'acolhedora'], Academia: ['ousada', 'moderna'], Restaurante: ['acolhedora', 'ousada', 'elegante'],
+  'Pet shop': ['acolhedora', 'moderna'], Ótica: ['moderna', 'minimalista', 'elegante'], Advocacia: ['luxo', 'minimalista', 'elegante'],
+  Barbearia: ['ousada', 'luxo', 'moderna'], Fisioterapia: ['moderna', 'acolhedora', 'minimalista'], Imobiliária: ['moderna', 'elegante', 'minimalista'],
+};
+/* Escolha estável por lead (o mesmo lead gera o mesmo site; leads diferentes, sites diferentes) */
+const hash = (str) => { let h = 2166136261; for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const pickBy = (arr, seed, salt) => arr[hash(`${seed}:${salt}`) % arr.length];
+
 const CATEGORY_STYLE = {
   'Clínica de estética': 'elegante', Odontologia: 'moderna', Academia: 'ousada', Restaurante: 'acolhedora', 'Pet shop': 'acolhedora',
   Ótica: 'moderna', 'Móveis planejados': 'elegante', Advocacia: 'luxo', Barbearia: 'ousada', Fisioterapia: 'moderna', Imobiliária: 'moderna',
@@ -69,9 +104,14 @@ const splitTitle = (h) => {
 };
 
 export function autoSpec(lead, dir = {}) {
-  const segTheme = SEG[lead.category] || { fundo: '#F4F1EC', fundo_alt: '#E9E4DB', tinta: '#17191C', acento: (lead.palette || [])[2] || '#1E8A66', motivo: 'linha', textura: 'nenhuma' };
-  const styleKey = dir.style && dir.style !== 'ia' ? dir.style : CATEGORY_STYLE[lead.category] || 'moderna';
-  const st = STYLE[styleKey] || STYLE.moderna;
+  const segBase = SEG[lead.category];
+  const palOpts = segBase ? [segBase, ...(PALETTE_ALTS[lead.category] || [])] : null;
+  const segTheme = (palOpts && { ...segBase, ...pickBy(palOpts, `${lead.id}-${dir.seed || ''}`, 'pal') }) || { fundo: '#F4F1EC', fundo_alt: '#E9E4DB', tinta: '#17191C', acento: (lead.palette || [])[2] || '#1E8A66', motivo: 'linha', textura: 'nenhuma' };
+  const seed = `${lead.id}-${dir.seed || ''}`;
+  const styleKey = dir.style && dir.style !== 'ia' ? dir.style : pickBy(STYLE_ALTS[lead.category] || [CATEGORY_STYLE[lead.category] || 'moderna'], seed, 'style');
+  const [ft, fx, fd] = pickBy(FONT_ALTS[styleKey] || FONT_ALTS.moderna, seed, 'fonts');
+  const st = { ...(STYLE[styleKey] || STYLE.moderna), fonte_titulo: ft, fonte_texto: fx, ...(fd ? { fonte_destaque: fd } : {}) };
+  if (!fd) delete st.fonte_destaque;
   const brandAccent = dir.colors?.[0] || lead.brand?.colors?.[0];
   const motion = dir.motion && dir.motion !== 'ia' ? { sutil: 'sutil', equilibrada: 'equilibrado', marcante: 'marcante' }[dir.motion] : st.movimento;
   const c = COPY[lead.category] || GENERIC(lead);
@@ -83,7 +123,10 @@ export function autoSpec(lead, dir = {}) {
   const where = [lead.neighborhood !== lead.city ? lead.neighborhood : '', lead.city].filter(Boolean).join(', ');
 
   const secoes = [];
-  secoes.push({ tipo: 'topo', variante: hasPhotos ? (dir.hero === 'dividido' ? 'dividido' : 'foto') : 'tipografico', rotulo: `${lead.category || ''} · ${lead.city || ''}`,
+  const heroV = hasPhotos ? (dir.hero === 'dividido' || dir.hero === 'foto' ? dir.hero : pickBy(['foto', 'dividido', 'foto'], seed, 'hero')) : 'tipografico';
+  const signature = pickBy(hasPhotos ? ['manifesto', 'galeria', 'empilhados'] : ['cartaz', 'manifesto', 'empilhados'], seed, 'sig');
+  const svcVariant = signature === 'empilhados' ? 'empilhados' : pickBy(hasPhotos ? ['cartoes', 'indice'] : ['indice', 'cartoes'], seed, 'svc');
+  secoes.push({ tipo: 'topo', variante: heroV, rotulo: `${lead.category || ''} · ${lead.city || ''}`,
     titulo_suave: soft, titulo_forte: strong, subtitulo: [`${lead.category || ''}${where ? ` em ${where}` : ''}.`, proof].filter(Boolean).join(' '),
     cta: { texto: c.cta }, cta2: { texto: 'Como funciona', link: '#processo' }, abas: c.abas });
   const nums = [];
@@ -92,11 +135,15 @@ export function autoSpec(lead, dir = {}) {
   if (lead.hoursTable?.['Sáb'] && !/fechado/i.test(lead.hoursTable['Sáb'])) nums.push({ valor: 'Sáb', legenda: `também aos sábados (${lead.hoursTable['Sáb']})` });
   if (nums.length >= 2) secoes.push({ tipo: 'numeros', itens: nums });
   if (c.dores?.length) secoes.push({ tipo: 'dores', rotulo: 'Você já passou por isso?', titulo_suave: 'O que ninguém', titulo_forte: 'deveria passar', itens: c.dores.map(([frase, resposta]) => ({ frase, resposta })) });
-  if (c.manifesto) secoes.push({ tipo: 'manifesto', rotulo: 'Nosso jeito', texto: c.manifesto });
+  if (c.manifesto && (signature === 'manifesto' || hash(seed) % 2)) secoes.push({ tipo: 'manifesto', rotulo: 'Nosso jeito', texto: c.manifesto });
   if (c.faixa?.length) secoes.push({ tipo: 'faixa', itens: c.faixa });
-  if (c.servicos?.length) secoes.push({ tipo: 'empilhados', ancora: 'servicos', menu: 'Serviços', rotulo: 'O que fazemos', titulo_suave: (c.servTitle || ['Do jeito que', 'você precisa'])[0], titulo_forte: (c.servTitle || ['Do jeito que', 'você precisa'])[1], com_fotos: hasPhotos, itens: c.servicos.map(([nome, texto]) => ({ nome, texto })) });
+  const svcBlock = c.servicos?.length ? (svcVariant === 'empilhados'
+    ? { tipo: 'empilhados', ancora: 'servicos', menu: 'Serviços', rotulo: 'O que fazemos', titulo_suave: (c.servTitle || ['Do jeito que', 'você precisa'])[0], titulo_forte: (c.servTitle || ['Do jeito que', 'você precisa'])[1], com_fotos: hasPhotos, itens: c.servicos.map(([nome, texto]) => ({ nome, texto })) }
+    : { tipo: 'servicos', variante: svcVariant, ancora: 'servicos', menu: 'Serviços', rotulo: 'O que fazemos', titulo_suave: (c.servTitle || ['Do jeito que', 'você precisa'])[0], titulo_forte: (c.servTitle || ['Do jeito que', 'você precisa'])[1], com_fotos: hasPhotos, itens: c.servicos.map(([nome, texto]) => ({ nome, texto })) }) : null;
+  if (svcBlock) secoes.push(svcBlock);
+  if (false && c.servicos?.length) secoes.push({ tipo: 'empilhados', ancora: 'servicos', menu: 'Serviços', rotulo: 'O que fazemos', titulo_suave: (c.servTitle || ['Do jeito que', 'você precisa'])[0], titulo_forte: (c.servTitle || ['Do jeito que', 'você precisa'])[1], com_fotos: hasPhotos, itens: c.servicos.map(([nome, texto]) => ({ nome, texto })) });
   if (hasPhotos) secoes.push({ tipo: 'galeria', variante: 'mosaico', ancora: 'galeria', menu: 'Galeria', rotulo: 'Trabalhos', titulo_suave: 'Feito por nós,', titulo_forte: 'pra durar' });
-  else secoes.push({ tipo: 'cartaz', palavra: name.split(' ').slice(0, 2).join(' '), selo: lead.rating ? `Nota ${Number(lead.rating).toFixed(1).replace('.', ',')} no Google` : lead.city });
+  else if (signature === 'cartaz' || !c.manifesto) secoes.push({ tipo: 'cartaz', palavra: name.split(' ').slice(0, 2).join(' '), selo: lead.rating ? `Nota ${Number(lead.rating).toFixed(1).replace('.', ',')} no Google` : lead.city });
   secoes.push({ tipo: 'processo', ancora: 'processo', menu: 'Como funciona', rotulo: 'Como funciona', titulo_suave: 'Do primeiro contato', titulo_forte: 'ao resultado', passos: c.processo.map(([titulo, texto]) => ({ titulo, texto })) });
   if (lead.reviewSamples?.length) secoes.push({ tipo: 'depoimentos', rotulo: 'Quem já fez', titulo_suave: lead.reviews ? `${lead.reviews} avaliações,` : 'Quem já fez', titulo_forte: lead.rating ? `nota ${Number(lead.rating).toFixed(1).replace('.', ',')}` : 'recomenda' });
   if (c.faq?.length) secoes.push({ tipo: 'faq', itens: c.faq.map(([pergunta, resposta]) => ({ pergunta, resposta })) });
@@ -109,6 +156,7 @@ export function autoSpec(lead, dir = {}) {
     whatsapp_texto: `Oi! Vi o site da ${name} e quero ${c.cta.toLowerCase()}.`,
     menu_cta: { texto: c.cta.split(' ')[0] === 'Pedir' ? 'Orçamento' : c.cta.split(' ')[0] },
     secoes,
+    variacao: { estilo: styleKey, fontes: [ft, fx, fd].filter(Boolean), topo: heroV, assinatura: signature, servicos: svcVariant },
     rodape: { frase: `${lead.category || ''} em ${lead.city || ''}.`, palavra_gigante: name.split(' ').slice(0, 2).join(' ') },
   };
 }

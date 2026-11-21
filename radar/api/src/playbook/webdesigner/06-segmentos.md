@@ -1,9 +1,9 @@
 # Webdesigner · 6. Playbooks por segmento
 
 ## Móveis planejados / marcenaria
-Conceito-base: precisão + material. Motivo: régua/cota, ripado, encaixe. Fotos reais de ambientes são TUDO: portfólio com filtros por ambiente.
+Conceitos possíveis (escolha ou crie outro): precisão + material, o ateliê e as mãos, a casa vivida, o detalhe do acabamento. Motivos: régua/cota, ripado, encaixe, veio da madeira — ou nenhum, se o conceito pedir limpeza total. Fotos reais de ambientes são TUDO: portfólio com filtros por ambiente.
 Seções-chave: topo com foto de ambiente, prova, ambientes (filtros), processo (medição → projeto 3D → produção → montagem), detalhes de acabamento, depoimentos, onde estamos.
-CTA: "Pedir orçamento" / "Agendar medição". Paleta do material (madeira, café, linho, latão). Referência de nível: myboxmarcenaria.com.br.
+CTA: "Pedir orçamento" / "Agendar medição". Paleta do material (madeira, café, linho, latão).
 
 ## Clínica de estética
 Conceito-base: calma, cuidado, resultado natural. Muito respiro, serifa fina + itálico, tons de pele/porcelana. Motivo: linhas orgânicas finas, arcos.

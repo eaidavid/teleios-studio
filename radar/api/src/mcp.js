@@ -197,7 +197,8 @@ function buildServer() {
     const l = await getLead(lead_id);
     if (!l) return fail('Lead não existe.');
     const { rows } = await q('select direction from sites where lead_id = $1', [lead_id]);
-    return text(briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null }));
+    const recent = (await q("select s.data, coalesce(l.data->>'brandName', l.data->>'name') as nome from sites s join leads l on l.id = s.lead_id where s.data ? 'premium' and s.lead_id <> $1 order by s.updated_at desc limit 5", [lead_id])).rows;
+    return text(briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null, recent }));
   });
 
   server.registerTool('ver_site', {

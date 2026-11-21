@@ -3,7 +3,18 @@ import { autoSpec } from './autospec.js';
 
 const line = (k, v) => (v !== undefined && v !== null && String(v).trim() !== '' ? `- **${k}:** ${v}\n` : '');
 
-export function briefMd(lead, { site, direction, notes } = {}) {
+export function recentSummary(rows = []) {
+  return rows.map((r) => {
+    const p = r.data?.premium || {};
+    const t = p.tema || {};
+    const types = (p.secoes || []).map((x) => x.tipo);
+    const topo = (p.secoes || []).find((x) => x.tipo === 'topo')?.variante || '';
+    const sig = ['cartaz', 'empilhados', 'manifesto', 'comparacao', 'html'].filter((k) => types.includes(k));
+    return `- ${r.nome}: fontes ${[t.fonte_titulo, t.fonte_texto].filter(Boolean).join(' + ')}, fundo ${t.fundo || '?'}, acento ${t.acento || '?'}, topo ${topo || '?'}, momentos ${sig.join('/') || '—'}`;
+  }).join('\n');
+}
+
+export function briefMd(lead, { site, direction, notes, recent } = {}) {
   const name = lead.brandName || lead.name;
   const a = lead.analysis || {};
   const photos = [...(lead.gallery || []), ...(lead.sitePhotos || [])];
@@ -31,6 +42,7 @@ export function briefMd(lead, { site, direction, notes } = {}) {
     const d = direction || site?.direction || {};
     md += `## Direção escolhida no Radar\n${line('Estilo', d.style)}${line('Movimento', d.motion)}${line('Topo', d.hero)}${line('Objetivo', d.goal)}${line('Seções desejadas', d.sections?.join(', '))}${line('Cores', d.colors?.join(', '))}${line('Observações', d.notes || notes)}\n`;
   }
+  if (recent?.length) md += `## Últimas prévias criadas (NÃO repita fontes, topo nem momento assinatura destas)\n${recentSummary(recent)}\n\n`;
   md += `## Rascunho do motor (ponto de partida — reescreva os textos com fatos desta empresa)\n\`\`\`json\n${JSON.stringify({ lead_id: lead.id, ...spec }, null, 2)}\n\`\`\`\n`;
   return md;
 }

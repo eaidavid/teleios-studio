@@ -33,7 +33,7 @@ Uma prévia pronta para venda tem **8 a 11 seções**, com ritmo de fundos (clar
 | `html` | html, fundo | momento autoral seu; use `.wrap`, `.sec` e atributos do kit |
 Campos comuns: `fundo` (claro\|alt\|escuro), `textura`, `ancora` + `menu` (aparece no menu), `rotulo` (vira "01 — Rótulo").
 
-## Exemplo completo (marcenaria com fotos e avaliações) — use como régua de densidade e qualidade, não como texto pronto
+## Exemplo completo (marcenaria com fotos) — mostra DENSIDADE e cuidado com texto. Não repita tema, fontes nem ordem: cada site é único
 ```json
 {
   "lead_id": 137,

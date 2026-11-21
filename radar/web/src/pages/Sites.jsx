@@ -182,13 +182,14 @@ export default function Sites() {
 function ClaudeSite({ site, lead, picker }) {
   const [device, setDevice] = useState('desk');
   const [note, setNote] = useState('');
+  const [v, setV] = useState(0);
   const copy = () => navigator.clipboard?.writeText(site.url).then(() => toast('Link copiado'), () => toast('Não foi possível copiar'));
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       <div className="card" style={{ padding: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220, display: 'grid', gap: 2 }}>
           <b style={{ font: '600 17px var(--f-display)' }}>{lead.brandName || lead.name}</b>
-          <span className="faint" style={{ fontSize: 12.5 }}>Feita pelo Webdesigner (Claude){site.direction?.conceito ? ` · ${site.direction.conceito}` : ''}{site.sent ? ' · enviada ao lead' : ''}</span>
+          <span className="faint" style={{ fontSize: 12.5 }}>{site.direction?.builder ? 'Montada pelo construtor' : 'Feita pelo Webdesigner (Claude)'}{site.direction?.conceito ? ` · ${site.direction.conceito}` : ''}{site.sent ? ' · enviada ao lead' : ''}</span>
         </div>
         {picker}
         <div className="seg" role="tablist" style={{ alignSelf: 'end' }}>
@@ -198,11 +199,12 @@ function ClaudeSite({ site, lead, picker }) {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <a className="btn btn-ghost" href={site.url} target="_blank" rel="noreferrer">Abrir em nova aba</a>
         <button type="button" className="btn btn-ghost" onClick={copy}><Copy size={15} />Copiar link</button>
+        <button type="button" className="btn btn-ghost" onClick={() => { if (!site.direction?.builder && !confirm('Esta prévia foi feita pelo Claude. Gerar outra versão pelo construtor vai substituí-la. Continuar?')) return; actions.buildPremium(lead.id, { ...(site.direction || {}), seed: Date.now() }).then(() => { setV((x) => x + 1); toast('Nova versão montada'); }, (e) => toast(e.message)); }}><Wand2 size={15} />Outra versão</button>
         <BriefButton lead={lead} className="btn btn-ghost" label="MD para o Claude" />
         <button type="button" className="btn btn-primary" onClick={() => { actions.markSiteSent(site); copy(); toast('Marcada como enviada. O link foi copiado para mandar no WhatsApp.'); }}><Send size={15} />Enviar ao lead</button>
       </div>
       <div className="preview-frame" style={{ maxWidth: device === 'mob' ? 400 : '100%', margin: '0 auto', width: '100%' }}>
-        <iframe title={`Prévia de ${lead.name}`} src={site.url} style={{ width: '100%', height: device === 'mob' ? 760 : 720, border: 0, display: 'block', background: '#fff' }} />
+        <iframe key={v} title={`Prévia de ${lead.name}`} src={`${site.url}?v=${v}`} style={{ width: '100%', height: device === 'mob' ? 760 : 720, border: 0, display: 'block', background: '#fff' }} />
       </div>
       <div className="card" style={{ padding: 16, display: 'grid', gap: 10 }}>
         <b>Pedir ajuste ao Webdesigner</b>

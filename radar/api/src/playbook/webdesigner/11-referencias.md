@@ -1,6 +1,6 @@
 # Webdesigner · 11. Referências (onde a régua de qualidade mora)
 
-Você não precisa navegar: os padrões abaixo já estão destilados. Use a lista para saber **qual nível perseguir**.
+Você não precisa navegar: os padrões abaixo já estão destilados. Use a lista para saber **qual nível perseguir** — nunca para copiar a forma de um site específico.
 
 ## Galerias de sites (melhores que Dribbble/Behance para sites reais, porque são páginas no ar)
 - **Awwwards** (awwwards.com) — premiados por design e desenvolvimento; régua máxima de movimento e tipografia.
@@ -27,7 +27,7 @@ Você não precisa navegar: os padrões abaixo já estão destilados. Use a list
 7. **Microinterações**: botão que preenche, seta que gira, link que sublinha. O motor já faz.
 
 ## Referências por segmento (nível a perseguir)
-- **Marcenaria/planejados**: myboxmarcenaria.com.br (paleta do material, régua, ripado, filtros de ambiente, números finos).
+- **Marcenaria/planejados**: sites de estúdios de interiores e marcenarias autorais no Awwwards/SiteInspire — fotos de ambiente grandes, materiais, processo.
 - **Estética/odonto premium**: sites de clínicas no Awwwards/SiteInspire com serifa fina, muito respiro e tons de pele; antes/depois só reais.
 - **Restaurante**: Godly/Land-book — foto de prato grande, tipografia expressiva, cardápio curto, mapa.
 - **Academia**: Awwwards (fitness) — escuro, cor ácida, tipografia expandida, marquee de modalidades.

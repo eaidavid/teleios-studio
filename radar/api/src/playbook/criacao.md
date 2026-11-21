@@ -100,20 +100,8 @@ Português do Brasil, próximo e direto, falando com o cliente final da empresa.
 - [ ] Funciona no celular (360px).
 - [ ] Faixa "Prévia criada pela Agência Teleios" com "Quero este site".
 
-## 11. Referências de padrão (o nível que buscamos)
-
-### Marcenaria / móveis planejados — referência: myboxmarcenaria.com.br
-O que faz parecer autêntico e premium (use como régua de qualidade, NUNCA copie layout, textos ou marca):
-- **Paleta tirada do material:** creme `#F6F1EA`, branco quente `#FFFDFA`, café `#2A1C18`/`#241714`, caramelo `#C99E72`, bege `#EBE3D5`, marrom médio `#7A5A3E`. Zero cinza frio, zero azul.
-- **Tipografia:** uma sans geométrica (Plus Jakarta Sans) em peso **300** gigante (84px no topo, 56px nas seções), com a parte final do título no tom caramelo e mais pesada ("Móveis planejados sob medida para **a sua história**").
-- **Motivo do ofício:** o rótulo de cada seção tem um ícone de **régua/cota** (`|—|`) + texto em caixa alta pequeno e espaçado ("PORTFÓLIO", "COMO TRABALHAMOS"). O indicador dos carrosséis é uma **régua com marcações**. Seções escuras têm textura de **ripado** (listras verticais sutis). Tudo isso vem da marcenaria.
-- **Ritmo de fundos:** alterna creme → branco quente → café escuro → bege. Cada seção com uma "temperatura".
-- **Topo:** foto real de ambiente em tela cheia com película quente (não preta), título à esquerda, dois CTAs (cheio caramelo + contorno), mini-abas numeradas "01 Elegância · 02 Funcionalidade · 03 Singularidade" com barra de progresso.
-- **Prova logo abaixo do topo:** linha de 4 números grandes e finos separados por fios verticais (só números reais!).
-- **Fotos sobrepostas** com um selo ("+10 anos de experiência") e, ao lado, texto curto + link sublinhado com seta ↗.
-- **Portfólio** com filtros em pílula (Cozinhas, Armários, Dormitórios…) + carrossel horizontal de fotos com cantos arredondados.
-- **Processo** em 3 colunas numeradas 01/02/03 com fio fino acima, sobre fundo escuro.
-- **Depoimentos** em cartões claros com aspas grandes no tom de acento, nome + papel (só depoimentos reais, ex.: `reviewSamples`).
-- **Rodapé** escuro com o ripado, colunas com rótulos em caixa alta no tom de acento.
-
-Para um cliente menor, adapte: menos seções, mas o mesmo cuidado (paleta do material, motivo do ofício, peso tipográfico, fotos reais, prova real).
+## 11. Variedade obrigatória (nenhum site igual ao anterior)
+Referências servem para calibrar **nível**, nunca para copiar forma. Cada prévia precisa ter uma combinação própria de:
+conceito · paleta · par tipográfico · topo · momento assinatura · ritmo de seções.
+O `brief_do_lead` traz as **últimas prévias criadas**: não repita o mesmo par de fontes, o mesmo topo nem o mesmo momento assinatura das 3 anteriores.
+Pode ser mais premium (editorial, ousado, escuro) ou mais simples e direto — o que decide é o que encanta ESTE cliente final.

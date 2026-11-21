@@ -266,7 +266,7 @@ export function registerRoutes(app) {
     const direction = req.body?.direction || {};
     const spec = req.body?.spec || autoSpec(l, direction);
     const html = renderPremium(spec, l);
-    const site = await upsertSite({ lead: l.id, data: { premium: spec }, direction: { ...direction, conceito: spec.conceito }, html });
+    const site = await upsertSite({ lead: l.id, data: { premium: spec }, direction: { ...direction, builder: true, conceito: spec.conceito }, html });
     await logActivity('construtor', `Construtor montou o site de ${l.brandName || l.name}`);
     return { ...site, html: undefined, hasHtml: true };
   });
@@ -275,8 +275,9 @@ export function registerRoutes(app) {
     const l = await getLead(Number(req.params.id));
     if (!l) return reply.code(404).send({ error: 'Lead não encontrado.' });
     const { rows } = await q('select direction from sites where lead_id = $1', [l.id]);
+    const recent = (await q("select s.data, coalesce(l.data->>'brandName', l.data->>'name') as nome from sites s join leads l on l.id = s.lead_id where s.data ? 'premium' and s.lead_id <> $1 order by s.updated_at desc limit 5", [l.id])).rows;
     reply.type('text/markdown; charset=utf-8');
-    return briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null });
+    return briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null, recent });
   });
 
   app.post('/api/sites/:id/sent', async (req) => {
