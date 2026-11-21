@@ -11,6 +11,15 @@ const dataOf = (obj) => Object.fromEntries(Object.entries(obj).filter(([k]) => !
 
 export const previewUrl = (slug) => `${(process.env.PREVIEW_URL || `${process.env.PUBLIC_URL || ''}/p`).replace(/\/$/, '')}/${slug}`;
 
+/* Robôs salvos + robôs novos do sistema, na ordem do funil */
+export function mergeBots(saved) {
+  return seedBots.map((d) => {
+    const cur = saved.find((x) => x.id === d.id);
+    if (!cur) return d;
+    return d.id === 'construtor' && cur.name === 'Construtor' ? { ...d, on: cur.on, instructions: cur.instructions } : cur;
+  }).concat(saved.filter((x) => !seedBots.some((d) => d.id === x.id)));
+}
+
 export function slugify(t) {
   return String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/&/g, 'e').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 }
@@ -78,7 +87,7 @@ export function registerRoutes(app) {
       campaigns: campaigns.rows.map((r) => ({ ...r.data, huntJob: undefined, id: r.id, createdAt: new Date(r.created_at).getTime(), hunt: huntStatus(r.id) || r.data.lastHunt || null })),
       sites: sites.rows.map((r) => ({ ...siteRow(r), url: previewUrl(r.slug) })),
       conversations, control,
-      bots: await (async () => { const saved = await kvGet('bots', seedBots); return [...saved, ...seedBots.filter((b) => !saved.some((x) => x.id === b.id))]; })(),
+      bots: mergeBots(await kvGet('bots', seedBots)),
       settings: await kvGet('settings', { ...seedSettings, whatsapp: { connected: false, number: '', warmupDay: 0, warmupTotal: 14 }, ai: { ...seedSettings.ai, keyConfigured: false } }),
       approvals: await kvGet('approvals', []),
       activity: act.rows.map((a) => ({ ...a, at: Number(a.at) })),
@@ -206,8 +215,7 @@ export function registerRoutes(app) {
   app.post('/api/whatsapp/connect', async () => waConnect());
   app.post('/api/whatsapp/logout', async () => { await waLogout(); return { ok: true }; });
   app.patch('/api/bots/:id', async (req) => {
-    const saved = await kvGet('bots', seedBots);
-    const bots = [...saved, ...seedBots.filter((b) => !saved.some((x) => x.id === b.id))];
+    const bots = mergeBots(await kvGet('bots', seedBots));
     await kvSet('bots', bots.map((b) => (b.id === req.params.id ? { ...b, ...req.body } : b)));
     return { ok: true };
   });

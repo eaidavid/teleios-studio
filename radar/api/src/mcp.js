@@ -15,7 +15,7 @@ import { enqueue, waStatus } from './whatsapp.js';
 import { kvGet, kvSet } from './db.js';
 import { seedSettings as defaults } from '../../web/src/data/seed.js';
 import { CATEGORIES } from '../../web/src/data/seed.js';
-import { getLead, patchLead, upsertSite, previewUrl, logActivity } from './routes.js';
+import { getLead, patchLead, upsertSite, previewUrl, logActivity, mergeBots } from './routes.js';
 import { STAGES } from '../../web/src/data/seed.js';
 import { BLOCKS, HEROES, FOOTERS, FONTS, RADIUS, ANIMS, TEXTS, STYLES, MOTIONS, GOALS, generateDesign } from '../../web/src/sites/generator.js';
 import { derivePalettes } from '../../web/src/sites/colors.js';
@@ -39,13 +39,17 @@ function buildServer() {
   const server = new McpServer({ name: 'teleios-radar', version: '1.0.0' }, { instructions: 'Radar de prospecção da Agência Teleios. Antes de criar prévia, escrever mensagem ou analisar, SEMPRE chame guia_de_criacao com o tipo certo e siga o padrão (nada de cara de modelo/IA; identidade autêntica; animações do Teleios Motion Kit; fotos reais; nada inventado). Quando o usuário pedir para fazer os pedidos/a fila do Radar, chame ver_fila e atenda cada pedido. Português do Brasil, tom próximo e direto.' });
 
   server.registerTool('guia_de_criacao', {
-    description: 'LEIA ANTES de criar prévia (tipo "previa"), escrever mensagem ("mensagem") ou analisar ("analise"). Traz o padrão de qualidade da Agência Teleios, as instruções que o David escreveu para cada robô no Radar e, para prévias, o kit de animações. Siga à risca.',
+    description: 'LEIA ANTES (e siga à risca) de criar prévia — é o manual do robô Webdesigner, com método, tipografia, cor, layouts, coreografia, textos, playbooks por segmento, snippets e rubrica de qualidade — ou (tipo "previa"), escrever mensagem ("mensagem") ou analisar ("analise"). Traz o padrão de qualidade da Agência Teleios, as instruções que o David escreveu para cada robô no Radar e, para prévias, o kit de animações. Siga à risca.',
     inputSchema: { tipo: z.enum(['previa', 'mensagem', 'analise']) },
   }, async ({ tipo }) => {
-    const bots = await kvGet('bots', seedBots);
+    const bots = mergeBots(await kvGet('bots', seedBots));
     const bot = bots.find((b) => b.id === GUIDE_BOT[tipo]);
     const extra = [bot?.instructions, ...(bot?.rules || [])].filter(Boolean);
     const parts = [readDoc(GUIDE_FILE[tipo])];
+    if (tipo === 'previa') {
+      const { readdirSync } = await import('node:fs');
+      for (const f of readdirSync(path.join(HERE, 'playbook/webdesigner')).sort()) parts.push(readDoc(`playbook/webdesigner/${f}`));
+    }
     if (extra.length) parts.push(`## Instruções do David para o robô ${bot.name} (prioridade sobre o guia)\n${extra.map((x) => `- ${x}`).join('\n')}`);
     if (tipo === 'previa') parts.push(readDoc('kit/LEIA.md'));
     return text(parts.join('\n\n---\n\n'));
