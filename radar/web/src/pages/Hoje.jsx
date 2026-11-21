@@ -150,7 +150,7 @@ export default function Hoje() {
             <div className="card-h"><h2><Zap size={17} />O que o time fez hoje</h2><a className="link" href="#robos">Time de robôs <ArrowRight size={13} /></a></div>
             <motion.ul className="feed" variants={listAnim} initial="hidden" animate="show">
               {activity.map((a) => {
-                const b = bots.find((x) => x.id === a.bot); const Icon = BOT_ICON[a.bot];
+                const b = bots.find((x) => x.id === a.bot); const Icon = BOT_ICON[a.bot] || Radar;
                 return (
                   <motion.li key={a.text} variants={itemAnim}>
                     <span className="bot-ic" style={{ background: b.color }}><Icon size={15} /></span>

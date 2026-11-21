@@ -35,6 +35,7 @@ export function botLine(id, p) {
   switch (id) {
     case 'cacador': return p.found ? `${p.found} empresas no funil · ${p.foundToday} hoje` : 'Nenhuma empresa ainda';
     case 'analista': return `${p.analyzed} analisadas${p.analyzedByClaude ? ` · ${p.analyzedByClaude} pelo Claude` : ''} · ${p.previews} prévias`;
+    case 'construtor': return `${p.previews} prévias criadas`;
     case 'redator': return `${p.toApprove} para aprovar · ${p.queued} na fila de envio`;
     case 'followup': return p.waitingFollow ? `${p.waitingFollow} sem resposta há 2+ dias` : 'Ninguém esperando follow-up';
     case 'triagem': return `${p.replied} responderam${p.blocked ? ` · ${p.blocked} pediram para parar` : ''}`;

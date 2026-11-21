@@ -29,9 +29,18 @@ app.get('/p/:slug', async (req, reply) => {
   const { rows } = await q('select html from sites where slug = $1', [req.params.slug]);
   if (!rows[0]) return reply.code(404).type('text/html').send('<h1 style="font-family:sans-serif">Prévia não encontrada</h1>');
   reply.header('x-robots-tag', 'noindex');
-  if (rows[0].html) return reply.type('text/html').header('content-security-policy', "script-src 'none'").send(rows[0].html);
+  // Páginas escritas pelo Claude: liberadas só as animações do kit (scripts do próprio Radar), fontes do Google e imagens
+  if (rows[0].html) {
+    return reply.type('text/html').header('content-security-policy', [
+      "default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:", 'img-src * data: blob:', "connect-src 'self'", "frame-ancestors 'self'",
+    ].join('; ')).send(rows[0].html);
+  }
   return reply.type('text/html').send(await readFile(path.join(DIST, 'previa.html'), 'utf8'));
 });
+
+/* Teleios Motion Kit (animações das prévias) */
+await app.register(fstatic, { root: path.join(here, 'kit'), prefix: '/kit/', decorateReply: false, maxAge: '1h' });
 
 if (existsSync(DIST)) {
   await app.register(fstatic, { root: DIST, index: ['index.html'] });

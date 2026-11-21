@@ -114,7 +114,7 @@ export function generateDesign(lead, dir, seed = Date.now()) {
   const brief = lead.analysis?.brief;
   return {
     style: styleKey,
-    headline: brief?.headline || `${lead.name}: qualidade aprovada pela cidade.`,
+    headline: brief?.headline || content.headline || `${lead.brandName || lead.name}, em ${lead.city || 'sua cidade'}.`,
     sub: brief?.sub || `${lead.category} em ${[lead.neighborhood, lead.city].filter(Boolean).join(', ')}.`,
     cta: CTA[goal],
     about: content.about,

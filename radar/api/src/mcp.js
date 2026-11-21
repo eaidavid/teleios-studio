@@ -2,11 +2,15 @@
 //   https://radar.agenciateleios.com.br/mcp/<MCP_TOKEN>
 // O Claude lê os leads, salva análises e cria a página-prévia; o link sai na hora.
 import { timingSafeEqual } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { seedBots } from '../../web/src/data/seed.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 import { q, leadRow, siteRow, requestRow, completeRequests } from './db.js';
-import { hunt, huntStatus } from './cacador.js';
+import { hunt, huntStatus, cleanName } from './cacador.js';
 import { enqueue, waStatus } from './whatsapp.js';
 import { kvGet, kvSet } from './db.js';
 import { seedSettings as defaults } from '../../web/src/data/seed.js';
@@ -15,6 +19,11 @@ import { getLead, patchLead, upsertSite, previewUrl, logActivity } from './route
 import { STAGES } from '../../web/src/data/seed.js';
 import { BLOCKS, HEROES, FOOTERS, FONTS, RADIUS, ANIMS, TEXTS, STYLES, MOTIONS, GOALS, generateDesign } from '../../web/src/sites/generator.js';
 import { derivePalettes } from '../../web/src/sites/colors.js';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const readDoc = (f) => readFileSync(path.join(HERE, f), 'utf8');
+const GUIDE_BOT = { previa: 'construtor', mensagem: 'redator', analise: 'analista' };
+const GUIDE_FILE = { previa: 'playbook/criacao.md', mensagem: 'playbook/abordagem.md', analise: 'playbook/analise.md' };
 
 const text = (v) => ({ content: [{ type: 'text', text: typeof v === 'string' ? v : JSON.stringify(v, null, 2) }] });
 const fail = (m) => ({ content: [{ type: 'text', text: m }], isError: true });
@@ -27,7 +36,20 @@ const brief = (l) => ({
 });
 
 function buildServer() {
-  const server = new McpServer({ name: 'teleios-radar', version: '1.0.0' }, { instructions: 'Radar de prospecção da Agência Teleios. Quando o usuário pedir para fazer os pedidos/a fila do Radar, chame ver_fila e atenda cada pedido. Escreva em português do Brasil, tom próximo e direto.' });
+  const server = new McpServer({ name: 'teleios-radar', version: '1.0.0' }, { instructions: 'Radar de prospecção da Agência Teleios. Antes de criar prévia, escrever mensagem ou analisar, SEMPRE chame guia_de_criacao com o tipo certo e siga o padrão (nada de cara de modelo/IA; identidade autêntica; animações do Teleios Motion Kit; fotos reais; nada inventado). Quando o usuário pedir para fazer os pedidos/a fila do Radar, chame ver_fila e atenda cada pedido. Português do Brasil, tom próximo e direto.' });
+
+  server.registerTool('guia_de_criacao', {
+    description: 'LEIA ANTES de criar prévia (tipo "previa"), escrever mensagem ("mensagem") ou analisar ("analise"). Traz o padrão de qualidade da Agência Teleios, as instruções que o David escreveu para cada robô no Radar e, para prévias, o kit de animações. Siga à risca.',
+    inputSchema: { tipo: z.enum(['previa', 'mensagem', 'analise']) },
+  }, async ({ tipo }) => {
+    const bots = await kvGet('bots', seedBots);
+    const bot = bots.find((b) => b.id === GUIDE_BOT[tipo]);
+    const extra = [bot?.instructions, ...(bot?.rules || [])].filter(Boolean);
+    const parts = [readDoc(GUIDE_FILE[tipo])];
+    if (extra.length) parts.push(`## Instruções do David para o robô ${bot.name} (prioridade sobre o guia)\n${extra.map((x) => `- ${x}`).join('\n')}`);
+    if (tipo === 'previa') parts.push(readDoc('kit/LEIA.md'));
+    return text(parts.join('\n\n---\n\n'));
+  });
 
   server.registerTool('buscar_leads', {
     description: 'Lista empresas do funil do Radar. Filtre por texto, etapa, categoria ou cidade. Use para achar o lead antes de analisar ou criar uma prévia.',
@@ -58,11 +80,14 @@ function buildServer() {
     const l = await getLead(id);
     if (!l) return fail(`Lead ${id} não existe.`);
     const { rows } = await q('select * from sites where lead_id = $1', [id]);
-    return text({ ...l, previa: rows[0] ? { ...siteRow(rows[0]), url: previewUrl(rows[0].slug) } : null });
+    const pv = rows[0] ? siteRow(rows[0]) : null;
+    if (pv?.html) { pv.html_tamanho = pv.html.length; delete pv.html; }
+    const { hours, ...rest } = l;
+    return text({ ...rest, brandName: l.brandName || cleanName(l.name), horario: hours, previa: pv ? { ...pv, url: previewUrl(pv.slug), editar: 'Para ajustar a página em HTML, chame ver_html_previa' } : null });
   });
 
   server.registerTool('salvar_analise', {
-    description: 'Grava a sua análise do lead no Radar (aparece na aba Análise). Envie só o que quiser atualizar.',
+    description: 'Grava a sua análise do lead no Radar (aparece na aba Análise). ANTES: chame guia_de_criacao({tipo:"analise"}). Envie só o que quiser atualizar.',
     inputSchema: {
       id: z.number().int(),
       oportunidade: z.number().int().min(0).max(100).optional().describe('0 a 100: quanto a agência pode ajudar'),
@@ -111,12 +136,13 @@ function buildServer() {
     cantos: RADIUS, animacoes_de_bloco: ANIMS, animacoes_de_texto: TEXTS,
     secoes: Object.fromEntries(Object.entries(BLOCKS).map(([k, b]) => [k, { nome: b.label, variantes: b.variants }])),
     paletas: 'Geradas a partir das cores da marca: clara, suave, escura, forte, neutra. Passe "cores" e escolha "paleta".',
-    dica: 'Para um site totalmente livre, envie "html" com a página completa (HTML + CSS inline, responsivo, sem scripts externos além de fontes do Google).',
+    dica: 'Prefira "html" autoral seguindo guia_de_criacao({tipo:"previa"}); o construtor é para variações rápidas.',
+    kit: readDoc('kit/LEIA.md'),
   }));
 
   server.registerTool('criar_previa', {
     description: [
-      'Cria ou atualiza o site-prévia de um lead e devolve o LINK PÚBLICO para mandar à empresa.',
+      'Cria ou atualiza o site-prévia de um lead e devolve o LINK PÚBLICO para mandar à empresa. ANTES: chame guia_de_criacao({tipo:"previa"}) e ver_lead. O jeito preferido é "html": página autoral completa seguindo o guia, com o Teleios Motion Kit (/kit/motion.js) e fotos reais do lead.',
       'Três jeitos: (1) só "direcao": o construtor monta tudo; (2) "design": você escolhe textos, seções e estilo (veja catalogo_construtor); (3) "html": página completa escrita por você.',
       'Use as cores da marca do lead (campo brand.colors em ver_lead) para não fugir da identidade dele.',
     ].join(' '),
@@ -158,6 +184,14 @@ function buildServer() {
     return text({ ok: true, link: site.url, editar_no_radar: `${process.env.PUBLIC_URL || ''}/#sites-${lead_id}`, modo: html ? 'html' : 'construtor' });
   });
 
+  server.registerTool('ver_html_previa', {
+    description: 'Devolve o HTML atual da prévia de um lead (quando foi feita em HTML), para você ajustar e salvar de novo com criar_previa.',
+    inputSchema: { lead_id: z.number().int() },
+  }, async ({ lead_id }) => {
+    const { rows } = await q('select html from sites where lead_id = $1', [lead_id]);
+    return rows[0]?.html ? text(rows[0].html) : fail('Essa prévia não tem HTML (foi feita pelo construtor).');
+  });
+
   server.registerTool('listar_previas', {
     description: 'Lista os sites-prévia criados, com o link de cada um.',
     inputSchema: {},
@@ -168,7 +202,7 @@ function buildServer() {
 
   server.registerTool('preparar_mensagem', {
     description: [
-      'Prepara a PRIMEIRA mensagem de WhatsApp para um lead (use depois de criar a prévia; inclua o link dela).',
+      'Prepara a PRIMEIRA mensagem de WhatsApp para um lead (use depois de criar a prévia; inclua o link dela). ANTES: chame guia_de_criacao({tipo:"mensagem"}).',
       'Por padrão vai para "Aprovar antes de enviar" no Radar; se o usuário ligou o envio direto em Configurações, entra direto na fila de envio,',
       'que respeita limite diário, intervalo aleatório e horário comercial. Escreva curto (até ~4 linhas), pessoal, citando um fato real do negócio,',
       'sem parecer propaganda, terminando com uma pergunta simples. Nunca envie para lead bloqueado.',

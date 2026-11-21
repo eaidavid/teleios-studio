@@ -50,6 +50,34 @@ const num = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); re
 const host = (url) => { try { return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, ''); } catch { return ''; } };
 const firstEmail = (v) => (Array.isArray(v) ? v[0] : String(v || '').split(/[,;\s]+/)[0]) || '';
 
+/* Nome limpo: o Google costuma colar descrição no nome ("Loja X - Móveis planejados em Y e região") */
+export function cleanName(raw = '') {
+  let n = String(raw).trim().replace(/\s+/g, ' ');
+  n = n.split(/\s[-–|·•:]\s|\s\|\s/)[0];
+  n = n.replace(/\s+(em|no|na|de)\s+[A-ZÁÉÍÓÚÂÊÔÃÕ][\wÀ-ú]+(\s[A-ZÁÉÍÓÚÂÊÔÃÕ][\wÀ-ú]+)*\s+e\s+[Rr]egi[aã]o\.?$/, '');
+  const words = n.split(' ');
+  // corta quando a categoria começa a se repetir ("Reffinato solução em móveis Móveis planejados…")
+  for (let i = 2; i < words.length; i++) {
+    if (/^(móveis|moveis|planejados|clínica|clinica|academia|restaurante|pizzaria|barbearia|ótica|otica|imobiliária|advocacia|pet|odontologia)$/i.test(words[i]) && i >= 2 && words.slice(0, i).join(' ').length > 6) {
+      const head = words.slice(0, i).join(' ');
+      if (new RegExp(words[i], 'i').test(head)) return head.replace(/[,.;]$/, '');
+    }
+  }
+  return n.replace(/[,.;]$/, '').slice(0, 60);
+}
+const asJson = (v) => { if (!v) return null; if (typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } };
+export function photosOf(r) {
+  const imgs = asJson(r.images) || [];
+  const urls = imgs.map((x) => x?.image || x?.Image || x).filter((u) => typeof u === 'string' && u.startsWith('http'));
+  if (r.thumbnail && String(r.thumbnail).startsWith('http')) urls.unshift(r.thumbnail);
+  return [...new Set(urls)].slice(0, 12);
+}
+export function reviewsOf(r) {
+  const list = asJson(r.user_reviews) || asJson(r.user_reviews_extended) || [];
+  return list.map((x) => ({ name: x.Name || x.name || '', rating: x.Rating ?? x.rating, text: String(x.Description || x.description || '').trim().slice(0, 400) }))
+    .filter((x) => x.text.length > 20).slice(0, 6);
+}
+
 /* Linha do Google Maps -> lead */
 function fromGoogle(r, campaign) {
   const addr = r.complete_address && typeof r.complete_address === 'object' ? r.complete_address : (() => { try { return JSON.parse(r.complete_address || '{}'); } catch { return {}; } })();
@@ -58,6 +86,9 @@ function fromGoogle(r, campaign) {
     placeKey: r.place_id || r.cid || r.data_id || `${r.title}|${r.address}`,
     data: {
       name: r.title || 'Sem nome',
+      brandName: cleanName(r.title || ''),
+      photos: photosOf(r),
+      reviewSamples: reviewsOf(r),
       category,
       googleCategory: r.category || '',
       contact: '',
@@ -240,8 +271,14 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
       for (const [i, it] of items.entries()) {
         st.read = i + 1;
         st.step = `lendo sites (${i + 1}/${items.length})`;
-        const exists = await q('select 1 from leads where place_key = $1', [it.placeKey]);
-        if (exists.rows.length) continue;
+        const exists = await q('select id, data from leads where place_key = $1', [it.placeKey]);
+        if (exists.rows.length) {
+          // já está no funil: só completa fotos, avaliações e nome limpo
+          const cur = exists.rows[0].data; const add = {};
+          for (const k of ['brandName', 'photos', 'reviewSamples']) if ((!cur[k] || !cur[k].length) && it.data[k]?.length) add[k] = it.data[k];
+          if (Object.keys(add).length) await q('update leads set data = data || $2 where id = $1', [exists.rows[0].id, add]);
+          continue;
+        }
         const data = await enrich(it.data);
         if (ai?.ai?.analyzeOnFind !== false) data.analysis = analyze(data);
         data.campaign = id;

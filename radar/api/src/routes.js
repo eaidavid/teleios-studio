@@ -78,7 +78,7 @@ export function registerRoutes(app) {
       campaigns: campaigns.rows.map((r) => ({ ...r.data, huntJob: undefined, id: r.id, createdAt: new Date(r.created_at).getTime(), hunt: huntStatus(r.id) || r.data.lastHunt || null })),
       sites: sites.rows.map((r) => ({ ...siteRow(r), url: previewUrl(r.slug) })),
       conversations, control,
-      bots: await kvGet('bots', seedBots),
+      bots: await (async () => { const saved = await kvGet('bots', seedBots); return [...saved, ...seedBots.filter((b) => !saved.some((x) => x.id === b.id))]; })(),
       settings: await kvGet('settings', { ...seedSettings, whatsapp: { connected: false, number: '', warmupDay: 0, warmupTotal: 14 }, ai: { ...seedSettings.ai, keyConfigured: false } }),
       approvals: await kvGet('approvals', []),
       activity: act.rows.map((a) => ({ ...a, at: Number(a.at) })),
@@ -206,7 +206,8 @@ export function registerRoutes(app) {
   app.post('/api/whatsapp/connect', async () => waConnect());
   app.post('/api/whatsapp/logout', async () => { await waLogout(); return { ok: true }; });
   app.patch('/api/bots/:id', async (req) => {
-    const bots = await kvGet('bots', seedBots);
+    const saved = await kvGet('bots', seedBots);
+    const bots = [...saved, ...seedBots.filter((b) => !saved.some((x) => x.id === b.id))];
     await kvSet('bots', bots.map((b) => (b.id === req.params.id ? { ...b, ...req.body } : b)));
     return { ok: true };
   });

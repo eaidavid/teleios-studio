@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Inbox, PenLine, Radar, Repeat, ScanSearch, Settings2 } from 'lucide-react';
+import { Check, Inbox, LayoutTemplate, PenLine, Radar, Repeat, ScanSearch, Settings2 } from 'lucide-react';
 import { actions, getState, useStore } from '../data/store';
 import { botLine, pipeline } from '../data/botStats';
 import { Modal, Switch, itemAnim, listAnim, toast } from '../components/ui';
 
-const ICONS = { Radar, ScanSearch, PenLine, Repeat, Inbox };
+const ICONS = { Radar, ScanSearch, PenLine, Repeat, Inbox, LayoutTemplate };
 
 export default function Robos() {
   const bots = useStore((s) => s.bots);
@@ -18,7 +18,7 @@ export default function Robos() {
       <div className="page-h"><div><h1>Time de <strong>robôs</strong></h1><p>Cada robô tem uma função e uma rotina. Ligue, pause ou ajuste as instruções de cada um.</p></div></div>
       <motion.div className="cards" variants={listAnim} initial="hidden" animate="show">
         {bots.map((b) => {
-          const Icon = ICONS[b.icon];
+          const Icon = ICONS[b.icon] || Radar;
           return (
             <motion.article key={b.id} className="card botc" variants={itemAnim} style={{ opacity: b.on ? 1 : 0.6 }}>
               <div className="botc-h">
@@ -41,7 +41,7 @@ export default function Robos() {
         {edit && (
           <>
             <label className="field"><span>O que ele faz</span><textarea id="bot-desc" className="textarea" value={edit.desc} onChange={(e) => setEdit({ ...edit, desc: e.target.value })} /></label>
-            <label className="field"><span>Instruções extras</span><textarea id="bot-ins" className="textarea" value={edit.instructions} onChange={(e) => setEdit({ ...edit, instructions: e.target.value })} placeholder="Ex.: nunca falar de preço na primeira mensagem" /><small>Vai junto com o pedido para a IA.</small></label>
+            <label className="field"><span>Instruções extras</span><textarea id="bot-ins" className="textarea" value={edit.instructions} onChange={(e) => setEdit({ ...edit, instructions: e.target.value })} placeholder="Ex.: nunca falar de preço na primeira mensagem" /><small>O Claude lê isto antes de trabalhar (tem prioridade sobre o guia padrão). Ex.: referências de sites que você gosta, o que evitar, tom.</small></label>
             <label className="field"><span>Regras (uma por linha)</span><textarea id="bot-rules" className="textarea" value={edit.rules.join('\n')} onChange={(e) => setEdit({ ...edit, rules: e.target.value.split('\n').filter(Boolean) })} /></label>
           </>
         )}

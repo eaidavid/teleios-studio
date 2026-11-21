@@ -111,6 +111,7 @@ function briefHeadline(l) {
     Barbearia: 'Corte em dia, cabeça leve.',
     Fisioterapia: 'Volte a se mexer sem dor.',
     Imobiliária: 'A chave certa para a sua próxima casa.',
+    'Móveis planejados': 'Cada centímetro da sua casa, pensado pra você.',
   };
-  return map[l.category] || `${l.name}: qualidade que a cidade já aprovou.`;
+  return map[l.category] || `${l.brandName || l.name}, perto de você em ${l.city || 'sua cidade'}.`;
 }
