@@ -65,7 +65,7 @@ const MOTION_RULES = {
 };
 const CATEGORY_STYLE = {
   'Clínica de estética': 'elegante', Odontologia: 'acolhedora', Academia: 'ousada', Restaurante: 'acolhedora', 'Pet shop': 'acolhedora',
-  Ótica: 'moderna', Advocacia: 'luxo', Barbearia: 'ousada', Fisioterapia: 'acolhedora', Imobiliária: 'moderna',
+  Ótica: 'moderna', 'Móveis planejados': 'elegante', Advocacia: 'luxo', Barbearia: 'ousada', Fisioterapia: 'acolhedora', Imobiliária: 'moderna',
 };
 const CATEGORY_SECTIONS = {
   'Clínica de estética': ['sobre', 'servicos', 'antesdepois', 'avaliacoes', 'equipe', 'perguntas', 'localizacao'],
@@ -78,6 +78,7 @@ const CATEGORY_SECTIONS = {
   Barbearia: ['servicos', 'planos', 'galeria', 'instagram', 'avaliacoes', 'localizacao'],
   Fisioterapia: ['sobre', 'servicos', 'processo', 'avaliacoes', 'equipe', 'perguntas', 'localizacao'],
   Imobiliária: ['sobre', 'servicos', 'numeros', 'galeria', 'avaliacoes', 'localizacao'],
+  'Móveis planejados': ['galeria', 'servicos', 'processo', 'antesdepois', 'avaliacoes', 'chamada', 'localizacao'],
 };
 export const suggestSections = (lead) => CATEGORY_SECTIONS[lead.category] || ['sobre', 'servicos', 'avaliacoes', 'galeria', 'localizacao'];
 
@@ -91,6 +92,7 @@ const CONTENT = {
   Advocacia: { services: ['Direito empresarial', 'Trabalhista', 'Família', 'Contratos'], goal: 'orcamento', about: 'Advocacia próxima, com linguagem clara e foco em resolver.' },
   Barbearia: { services: ['Corte', 'Barba', 'Corte + barba', 'Pigmentação'], goal: 'agendar', about: 'Corte em dia, ambiente bom e aquele café enquanto espera.' },
   Fisioterapia: { services: ['Ortopédica', 'Pilates clínico', 'RPG', 'Pós-operatório'], goal: 'agendar', about: 'Tratamento individual para você voltar a se mexer sem dor.' },
+  'Móveis planejados': { services: ['Cozinhas planejadas', 'Dormitórios e closets', 'Home office', 'Projeto 3D gratuito'], goal: 'orcamento', about: 'Projetamos e fabricamos cada ambiente sob medida, do projeto 3D à montagem, com acabamento de primeira.' },
   Imobiliária: { services: ['Venda', 'Locação', 'Avaliação de imóvel', 'Administração'], goal: 'visitar', about: 'A chave certa para a sua próxima casa, com quem conhece a região.' },
 };
 const CTA = { agendar: 'Agendar pelo WhatsApp', orcamento: 'Pedir orçamento', visitar: 'Como chegar', comprar: 'Fazer pedido' };

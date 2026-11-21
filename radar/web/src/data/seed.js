@@ -27,6 +27,7 @@ export const CATEGORIES = {
   Advocacia: { pre: ['Advocacia', 'Escritório'], suf: ['Moraes & Lima', 'Prado', 'Fontes', 'Alencar'], palette: ['#14213D', '#F2E8D5', '#C9A24D'] },
   Barbearia: { pre: ['Barbearia'], suf: ['Navalha Fina', 'Old Town', 'Dom Corte', 'Bigode'], palette: ['#1A1410', '#F2E6D8', '#B8743C'] },
   Fisioterapia: { pre: ['Fisio', 'Clínica'], suf: ['Vita', 'Movimento', 'Equilíbrio', 'Postura'], palette: ['#E6F4F7', '#0B3A47', '#2BA3B8'] },
+  'Móveis planejados': { pre: ['Planejados', 'Marcenaria', 'Ambientes'], suf: ['Arte em Madeira', 'Casa Viva', 'Linea', 'Prime Móveis', 'Studio Lar'], palette: ['#F4EFE8', '#2B2118', '#B07A4A'] },
   Imobiliária: { pre: ['Imobiliária'], suf: ['Chave Certa', 'Lar Ideal', 'Horizonte', 'Teto'], palette: ['#F2EFE9', '#14181D', '#00A876'] },
 };
 const BAIRROS = ['Campolim', 'Centro', 'Jardim Vergueiro', 'Santa Rosália', 'Mangal', 'Éden', 'Wanel Ville', 'Trujillo', 'Além Ponte', 'Vila Hortência'];

@@ -23,6 +23,7 @@ const CAT_WORDS = [
   ['Barbearia', ['barbear', 'barber']],
   ['Fisioterapia', ['fisioter', 'pilates', 'rpg', 'quiroprax']],
   ['Imobiliária', ['imobili', 'corretor', 'imóveis']],
+  ['Móveis planejados', ['planejad', 'marcenaria', 'móveis', 'moveis', 'marceneiro', 'cozinhas']],
 ];
 export function mapCategory(raw = '', fallback) {
   const t = ` ${String(raw).toLowerCase()} `;
@@ -129,7 +130,7 @@ async function gosomWait(job, onTick) {
 const OSM_TAGS = {
   'Clínica de estética': ['shop=beauty'], Odontologia: ['amenity=dentist', 'healthcare=dentist'], Academia: ['leisure=fitness_centre'],
   Restaurante: ['amenity=restaurant'], 'Pet shop': ['shop=pet', 'amenity=veterinary'], Ótica: ['shop=optician'], Advocacia: ['office=lawyer'],
-  Barbearia: ['shop=hairdresser'], Fisioterapia: ['healthcare=physiotherapist'], Imobiliária: ['office=estate_agent'],
+  Barbearia: ['shop=hairdresser'], Fisioterapia: ['healthcare=physiotherapist'], Imobiliária: ['office=estate_agent'], 'Móveis planejados': ['shop=furniture', 'craft=carpenter', 'shop=kitchen'],
 };
 async function osmSearch(category, city) {
   const tags = OSM_TAGS[category];
