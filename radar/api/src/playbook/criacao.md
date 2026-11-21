@@ -1,5 +1,6 @@
 # Guia de criação de prévias · Agência Teleios
 
+> **Ordem:** `guia_de_criacao` → `brief_do_lead` (dados + rascunho mastigado) → melhore → `montar_site`.
 > **Como entregar:** use `montar_site` (motor premium, arquivo 9 do Webdesigner). Ele garante acabamento de estúdio; você faz a direção de arte e os textos.
 > HTML 100% autoral (`criar_previa` com `html`) só quando a ideia não couber no motor. Nunca entregue uma página com menos de 8 seções.
 

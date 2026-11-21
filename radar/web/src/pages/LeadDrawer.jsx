@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { actions, useStore } from '../data/store';
 import { AskClaude } from '../components/ClaudeQueue';
+import BriefButton from '../components/BriefButton';
 import { STAGES } from '../data/seed';
 import { useApp } from '../App';
 import { Avatar, Drawer, Empty, ScoreRing, StageChip, ago, ease, money, toast } from '../components/ui';
@@ -113,7 +114,7 @@ function Analysis({ lead }) {
             <span className="muted" style={{ fontSize: 13 }}>{a.brief.sub}</span>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{a.brief.sections.map((s) => <span key={s} className="tag">{s}</span>)}</div>
             <span className="faint" style={{ fontSize: 12 }}>Tom: {a.brief.tone}</span>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><a className="btn btn-primary btn-sm" href={`#sites-${lead.id}`}><LayoutTemplate size={14} />Criar site-prévia</a><AskClaude kind="previa" leads={[lead.id]} label="Claude criar a prévia" /></div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><a className="btn btn-primary btn-sm" href={`#sites-${lead.id}`}><LayoutTemplate size={14} />Criar site-prévia</a><AskClaude kind="previa" leads={[lead.id]} label="Claude criar a prévia" /><BriefButton lead={lead} /></div>
           </div>
         </div>
       </div>

@@ -4,6 +4,9 @@ import { q, leadRow, siteRow, kvGet, kvSet, requestRow } from './db.js';
 import { analyze } from '../../web/src/data/analysis.js';
 import { seedBots, seedSettings } from '../../web/src/data/seed.js';
 import { hunt, huntStatus } from './cacador.js';
+import { renderPremium } from './templates/premium.js';
+import { autoSpec } from './templates/autospec.js';
+import { briefMd } from './templates/brief.js';
 import { waStatus, connect as waConnect, logout as waLogout, sendNow, enqueue, sentTodayCount } from './whatsapp.js';
 
 const SPLIT = ['id', 'stage', 'campaign', 'createdAt'];
@@ -256,6 +259,26 @@ export function registerRoutes(app) {
     const { lead, data, direction, html } = req.body || {};
     try { return await upsertSite({ lead: Number(lead), data, direction, html }); } catch (e) { return reply.code(400).send({ error: e.message }); }
   });
+  /* Construtor do painel: monta no motor premium a partir da direção escolhida */
+  app.post('/api/sites/:lead/premium', async (req, reply) => {
+    const l = await getLead(Number(req.params.lead));
+    if (!l) return reply.code(404).send({ error: 'Lead não encontrado.' });
+    const direction = req.body?.direction || {};
+    const spec = req.body?.spec || autoSpec(l, direction);
+    const html = renderPremium(spec, l);
+    const site = await upsertSite({ lead: l.id, data: { premium: spec }, direction: { ...direction, conceito: spec.conceito }, html });
+    await logActivity('construtor', `Construtor montou o site de ${l.brandName || l.name}`);
+    return { ...site, html: undefined, hasHtml: true };
+  });
+  /* "Montar MD para o Claude" */
+  app.get('/api/leads/:id/brief', async (req, reply) => {
+    const l = await getLead(Number(req.params.id));
+    if (!l) return reply.code(404).send({ error: 'Lead não encontrado.' });
+    const { rows } = await q('select direction from sites where lead_id = $1', [l.id]);
+    reply.type('text/markdown; charset=utf-8');
+    return briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null });
+  });
+
   app.post('/api/sites/:id/sent', async (req) => {
     await q('update sites set sent_at = now() where id = $1', [Number(req.params.id)]);
     return { ok: true };

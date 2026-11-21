@@ -306,6 +306,18 @@ export const actions = {
     sync(`/requests/${id}`, 'DELETE');
   },
 
+  async buildPremium(leadId, direction) {
+    if (!isApi()) throw new Error('O motor premium roda no servidor.');
+    const site = await api(`/sites/${leadId}/premium`, 'POST', { direction });
+    set((s) => ({ ...s, sites: s.sites.some((x) => x.lead === leadId) ? s.sites.map((x) => (x.lead === leadId ? { ...x, ...site } : x)) : [site, ...s.sites] }));
+    return site;
+  },
+  async briefMd(leadId) {
+    if (!isApi()) throw new Error('O MD é montado no servidor.');
+    const res = await fetch(`./api/leads/${leadId}/brief`, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Não consegui montar o MD.');
+    return res.text();
+  },
   markSiteSent(site) {
     set((s) => ({ ...s, sites: s.sites.map((x) => (x.id === site.id ? { ...x, sent: Date.now() } : x)) }));
     sync(`/sites/${site.id}/sent`, 'POST');

@@ -25,6 +25,11 @@ Uma prévia pronta para venda tem **8 a 11 seções**, com ritmo de fundos (clar
 | `faixa` | itens[] | serviços, ambientes ou bairros atendidos |
 | `local` | rotulo, titulos, texto | horário, endereço, telefone e mapa entram sozinhos |
 | `chamada` | rotulo, titulo_suave, titulo_forte, texto, cta{texto} | escura por padrão |
+| `dores` | rotulo, titulos, subtitulo, itens[{frase, resposta}] (até 3) | frases na voz do cliente final ("Pedi orçamento e ninguém respondeu") + como a empresa resolve |
+| `cartaz` | palavra (aceita `<em>`), topo_esquerda/direita, base_esquerda/direita, selo, cor_fundo, cor_texto | pôster tipográfico gigante — o momento assinatura quando não há foto |
+| `empilhados` | rotulo, titulos, itens[{nome, texto, foto?, simbolo?}] (até 5), com_fotos | cartões que grudam e empilham na rolagem (como os serviços do site da Teleios) |
+| `comparacao` | rotulo, titulos, titulo_sem, sem[], titulo_com, com[] | "do jeito comum" × "com a Empresa" — só diferenças verdadeiras |
+| `faq` | rotulo, titulos, itens[{pergunta, resposta}] | dúvidas reais do segmento (prazo, medição, garantia, pagamento — só se informado; senão responda com o processo) |
 | `html` | html, fundo | momento autoral seu; use `.wrap`, `.sec` e atributos do kit |
 Campos comuns: `fundo` (claro\|alt\|escuro), `textura`, `ancora` + `menu` (aparece no menu), `rotulo` (vira "01 — Rótulo").
 
@@ -65,6 +70,6 @@ Campos comuns: `fundo` (claro\|alt\|escuro), `textura`, `ancora` + `menu` (apare
 Repare: conceito real (casal, feito à mão — tirado das avaliações), números só reais, textos específicos, ritmo de fundos,
 um momento assinatura (manifesto que acende), 11 seções. **Esse é o mínimo de densidade aceitável.**
 
-## Sem fotos reais
+## Sem fotos reais (veja o exemplo aprovado `88-wood-shop-sem-fotos` no fim do guia)
 Topo `tipografico` grande + `numeros` + `manifesto` + `servicos` em `cartoes` com `com_fotos: false` + `processo` + `depoimentos` + `local` + `chamada`,
 e um bloco `html` autoral com um elemento gráfico do conceito (ex.: régua em SVG com as medidas de um móvel, carimbo, composição tipográfica).

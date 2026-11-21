@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { actions, useStore } from '../data/store';
 import { AskClaude } from '../components/ClaudeQueue';
+import BriefButton from '../components/BriefButton';
 import { useApp } from '../App';
 import { Avatar, Segmented, ease, toast } from '../components/ui';
 import Preview from '../sites/Preview';
@@ -52,7 +53,12 @@ export default function Sites() {
   const set = (patch) => save({ ...d, ...patch });
   const setAnim = (patch) => { set(patch); setReplay((r) => r + 1); };
 
+  const live = useStore((s) => s.session.mode === 'api');
   const create = (dir) => {
+    if (live) {
+      // no servidor, a direção vira um site no motor premium (mesmo acabamento das prévias do Claude)
+      return actions.buildPremium(leadId, dir).then(() => { setMode('edit'); toast('Site montado no motor premium. Ajuste pelo Claude ou monte o MD.'); }, (e) => toast(e.message));
+    }
     actions.saveSite({ id: site?.id, lead: leadId, direction: dir, data: generateDesign(lead, dir) });
     setMode('edit');
     setReplay((r) => r + 1);
@@ -106,8 +112,9 @@ export default function Sites() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             <button type="button" className="btn btn-primary" onClick={() => setMode('wizard')}><Sparkles size={15} />Montar no construtor</button>
             <AskClaude kind="previa" leads={[lead.id]} label="Pedir ao Claude" className="btn btn-ghost" />
+            <BriefButton lead={lead} className="btn btn-ghost" />
           </div>
-          <small className="faint">O Claude cria quando você disser no chat dele: “Faz os pedidos do Radar”. A prévia aparece aqui para você ajustar.</small>
+          <small className="faint">Construtor: monta na hora no motor premium. Claude: entra na fila (“Faz os pedidos do Radar”) ou cole o MD no chat dele.</small>
         </motion.div>
       )}
 
@@ -191,6 +198,7 @@ function ClaudeSite({ site, lead, picker }) {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <a className="btn btn-ghost" href={site.url} target="_blank" rel="noreferrer">Abrir em nova aba</a>
         <button type="button" className="btn btn-ghost" onClick={copy}><Copy size={15} />Copiar link</button>
+        <BriefButton lead={lead} className="btn btn-ghost" label="MD para o Claude" />
         <button type="button" className="btn btn-primary" onClick={() => { actions.markSiteSent(site); copy(); toast('Marcada como enviada. O link foi copiado para mandar no WhatsApp.'); }}><Send size={15} />Enviar ao lead</button>
       </div>
       <div className="preview-frame" style={{ maxWidth: device === 'mob' ? 400 : '100%', margin: '0 auto', width: '100%' }}>

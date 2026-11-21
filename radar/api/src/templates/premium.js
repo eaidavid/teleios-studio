@@ -31,7 +31,7 @@ export const FONTS = {
 };
 export const MOTIFS = ['regua', 'ponto', 'linha', 'arco', 'cruz'];
 export const TEXTURES = ['ripado', 'grao', 'grade', 'linhas', 'nenhuma'];
-export const SECTION_TYPES = ['topo', 'numeros', 'sobre', 'manifesto', 'servicos', 'galeria', 'processo', 'depoimentos', 'faixa', 'local', 'chamada', 'html'];
+export const SECTION_TYPES = ['topo', 'numeros', 'dores', 'sobre', 'manifesto', 'cartaz', 'servicos', 'empilhados', 'galeria', 'processo', 'comparacao', 'depoimentos', 'faixa', 'faq', 'local', 'chamada', 'html'];
 
 /* ---------- utilidades ---------- */
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -140,7 +140,7 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
           const badge = s.selo ? `<div class="badge" data-reveal="left" data-delay="0.8"><b>${esc(s.selo.numero)}</b><span>${esc(s.selo.texto)}</span></div>` : '';
           sections.push(`<header class="hero hero-split ${bgCls(s)}"${idAttr}><div class="wrap"><div class="grid"><div>${eyebrow}${title('h1', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}${sub}${ctas}</div><div class="ph" data-curtain data-delay="0.2">${img(p, s.foto_alt, 'loading="eager"')}${badge}</div></div></div></header>`);
         } else {
-          const facts = [lead.rating ? `Nota ${String(lead.rating).replace('.', ',')} no Google` : '', lead.neighborhood && lead.neighborhood !== lead.city ? lead.neighborhood : '', lead.city].filter(Boolean);
+          const facts = [lead.rating ? `Nota ${Number(lead.rating).toFixed(1).replace('.', ',')} no Google` : '', lead.neighborhood && lead.neighborhood !== lead.city ? lead.neighborhood : '', lead.city].filter(Boolean);
           sections.push(`<header class="hero hero-type ${bgCls(s)}"${idAttr}><div class="wrap">${eyebrow}${title('h1', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}<div class="row"><div>${sub}</div>${ctas}</div>${facts.length ? `<p class="muted" style="margin-top:28px" data-reveal data-delay="0.6">${facts.map(esc).join(' · ')}</p>` : ''}</div></header>`);
         }
         break;
@@ -202,7 +202,7 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
         const items = (s.itens?.length ? s.itens : (lead.reviewSamples || []).map((r) => ({ nome: r.name, texto: r.text, papel: 'Avaliação no Google', nota: r.rating }))).filter((x) => has(x.texto)).slice(0, 3);
         if (!items.length) break;
         const clip = (t, max) => (t.length > max ? `${t.slice(0, max).replace(/\s+\S*$/, '')}…` : t);
-        const proof = lead.rating ? `<p class="lead" data-reveal><span class="stars">★★★★★</span> Nota ${String(lead.rating).replace('.', ',')} com ${lead.reviews} avaliações no Google</p>` : '';
+        const proof = lead.rating ? `<p class="lead" data-reveal><span class="stars">★★★★★</span> Nota ${Number(lead.rating).toFixed(1).replace('.', ',')} com ${lead.reviews} avaliações no Google</p>` : '';
         sections.push(`<section class="sec ${bgCls(s, 'alt')}"${idAttr}><div class="wrap"><div class="head"><div>${label(s.rotulo || 'Quem já fez')}${title('h2', s.titulo_suave, s.titulo_forte || 'O que dizem os clientes', 'class="t-acc"')}</div>${proof}</div><div class="quotes" data-stagger="0.1" data-reveal-type="${rev}">${items.map((x, i) => `<figure class="quote ${i === 0 ? 'big' : ''}" style="margin:0"><span class="q" aria-hidden="true">“</span><p>${esc(clip(String(x.texto).replace(/\s+/g, ' ').trim(), i === 0 ? 260 : 190))}</p><figcaption class="who"><span class="av">${esc(String(x.nome || '?').trim()[0] || '?')}</span><span>${esc(x.nome)}<small>${esc(x.papel || 'Cliente')}</small></span></figcaption></figure>`).join('')}</div></div></section>`);
         break;
       }
@@ -217,12 +217,40 @@ export function renderPremium(spec, lead, { agencyWa = '5515981763815' } = {}) {
         const table = lead.hoursTable ? ORDER.filter((d) => lead.hoursTable[d]).map((d) => [d, lead.hoursTable[d]]) : [];
         const mapHref = lead.mapsUrl || (lead.address ? `https://www.google.com/maps/search/${encodeURIComponent(`${name} ${lead.address}`)}` : null);
         const p = s.foto || nextPhoto();
-        sections.push(`<section class="sec ${bgCls(s)}" id="${esc(id || 'contato')}"><div class="wrap"><div class="place"><div>${label(s.rotulo || 'Onde estamos')}${title('h2', s.titulo_suave || (lead.neighborhood && lead.neighborhood !== lead.city ? lead.neighborhood : 'Venha conhecer em'), s.titulo_forte || lead.city || 'nosso espaço', 'class="t-acc"')}${has(s.texto) ? `<p class="lead" style="margin-top:22px" data-reveal>${rich(s.texto)}</p>` : ''}<div class="contact-list" data-stagger="0.08">${lead.address ? `<a href="${esc(mapHref)}" target="_blank" rel="noopener">${I.pin}${esc(lead.address)}</a>` : ''}${lead.phone ? `<a href="${esc(wa || `tel:${digits(lead.phone)}`)}" target="_blank" rel="noopener">${I.phone}${esc(lead.phone)}</a>` : ''}${lead.instagram ? `<a href="https://instagram.com/${esc(lead.instagram.replace('@', ''))}" target="_blank" rel="noopener">${I.ig}${esc(lead.instagram)}</a>` : ''}</div></div><div data-reveal>${table.length ? `<table class="hours"><tbody>${table.map(([d, h]) => `<tr class="${/fechado/i.test(h) ? 'closed' : ''}"><td>${esc(d)}</td><td>${esc(h)}</td></tr>`).join('')}</tbody></table>` : ''}${p ? `<div class="map-card" style="margin-top:${table.length ? 28 : 0}px">${img(p)}${mapHref ? `<a class="pin" href="${esc(mapHref)}" target="_blank" rel="noopener"><span>Abrir no mapa</span>${I.ne}</a>` : ''}</div>` : ''}</div></div></div></section>`);
+        sections.push(`<section class="sec ${bgCls(s)}" id="${esc(id || 'contato')}"><div class="wrap"><div class="place"><div>${label(s.rotulo || 'Onde estamos')}${title('h2', s.titulo_suave || (lead.neighborhood && lead.neighborhood !== lead.city ? lead.neighborhood : 'Venha conhecer em'), s.titulo_forte || lead.city || 'nosso espaço', 'class="t-acc"')}${has(s.texto) ? `<p class="lead" style="margin-top:22px" data-reveal>${rich(s.texto)}</p>` : ''}<div class="contact-list" data-stagger="0.08">${lead.address ? `<a href="${esc(mapHref)}" target="_blank" rel="noopener">${I.pin}${esc(lead.address)}</a>` : ''}${lead.phone ? `<a href="${esc(wa || `tel:${digits(lead.phone)}`)}" target="_blank" rel="noopener">${I.phone}${esc(lead.phone)}</a>` : ''}${lead.instagram ? `<a href="https://instagram.com/${esc(lead.instagram.replace('@', ''))}" target="_blank" rel="noopener">${I.ig}${esc(lead.instagram)}</a>` : ''}</div></div><div data-reveal>${table.length ? `<table class="hours"><tbody>${table.map(([d, h]) => `<tr class="${/fechado/i.test(h) ? 'closed' : ''}"><td>${esc(d)}</td><td>${esc(h)}</td></tr>`).join('')}</tbody></table>` : ''}${p ? `<div class="map-card" style="margin-top:${table.length ? 28 : 0}px">${img(p)}${mapHref ? `<a class="pin" href="${esc(mapHref)}" target="_blank" rel="noopener"><span>Abrir no mapa</span>${I.ne}</a>` : ''}</div>` : (mapHref ? `<a class="map-card noimg tex-${th.texture !== 'nenhuma' ? th.texture : 'grade'}" href="${esc(mapHref)}" target="_blank" rel="noopener" style="margin-top:${table.length ? 28 : 0}px"><span class="mk">${I.pin}</span><span class="pin"><span>${esc(lead.address || 'Abrir no mapa')}</span>${I.ne}</span></a>` : '')}</div></div></div></section>`);
         break;
       }
       case 'chamada':
         sections.push(`<section class="sec ${bgCls(s, 'escuro')}"${idAttr}><div class="wrap final">${label(s.rotulo, false)}${title('h2', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}<div class="row">${has(s.texto) ? `<p class="lead" data-reveal>${rich(s.texto)}</p>` : '<span></span>'}<div data-reveal data-delay="0.3">${ctaBtn(s.cta || { texto: 'Chamar no WhatsApp' }, 'lg')}</div></div></div></section>`);
         break;
+      case 'dores': {
+        const items = (s.itens || []).filter((x) => has(x.frase)).slice(0, 3);
+        if (!items.length) break;
+        sections.push(`<section class="sec ${bgCls(s)}"${idAttr}><div class="wrap"><div class="head"><div>${label(s.rotulo)}${title('h2', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}</div>${has(s.subtitulo) ? `<p class="lead" data-reveal>${rich(s.subtitulo)}</p>` : ''}</div><div class="pains" style="--n:${items.length}" data-stagger="0.1" data-reveal-type="${rev}">${items.map((x) => `<div class="pain"><q>${esc(x.frase)}</q>${has(x.resposta) ? `<p>${esc(x.resposta)}</p>` : ''}</div>`).join('')}</div></div></section>`);
+        break;
+      }
+      case 'cartaz': {
+        const big = has(s.palavra) ? rich(s.palavra) : esc(name);
+        sections.push(`<section class="sec tight ${bgCls(s)}"${idAttr}><div class="wrap"><div class="poster" style="${hex(s.cor_fundo) ? `--poster-bg:${s.cor_fundo};` : ''}${hex(s.cor_texto) ? `--poster-ink:${s.cor_texto};` : ''}" data-reveal="zoom"><div class="meta"><span>${esc(s.topo_esquerda || lead.category || '')}</span><span>${esc(s.topo_direita || lead.city || '')}</span></div>${has(s.selo) ? `<div class="stamp">${esc(s.selo)}</div>` : ''}<div class="big" data-split="${split}">${big}</div><div class="meta"><span>${esc(s.base_esquerda || (lead.rating ? `Nota ${Number(lead.rating).toFixed(1).replace('.', ',')} · ${lead.reviews} avaliações` : ''))}</span><span>${esc(s.base_direita || lead.hours || '')}</span></div></div></div></section>`);
+        break;
+      }
+      case 'empilhados': {
+        const items = (s.itens || []).slice(0, 5);
+        if (!items.length) break;
+        sections.push(`<section class="sec ${bgCls(s)}"${idAttr}><div class="wrap"><div class="head"><div>${label(s.rotulo)}${title('h2', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}</div></div><div class="stack">${items.map((x, i) => { const p = x.foto || (s.com_fotos !== false ? nextPhoto() : null); return `<article class="${p ? '' : 'noimg'}" style="--i:${i}"><div class="txt"><span class="num">${String(i + 1).padStart(2, '0')}</span><div><h3>${esc(x.nome)}</h3>${has(x.texto) ? `<p>${esc(x.texto)}</p>` : ''}</div></div><div class="ph ${p ? '' : `tex-${th.texture !== 'nenhuma' ? th.texture : 'linhas'} noph`}">${p ? img(p, x.nome) : `<span class="glyph" aria-hidden="true">${esc(x.simbolo || String(i + 1).padStart(2, '0'))}</span><span class="cap" aria-hidden="true">${motif}${esc(x.nome)}</span>`}</div></article>`; }).join('')}</div></div></section>`);
+        break;
+      }
+      case 'comparacao': {
+        if (!s.sem?.length || !s.com?.length) break;
+        sections.push(`<section class="sec ${bgCls(s)}"${idAttr}><div class="wrap"><div class="head"><div>${label(s.rotulo)}${title('h2', s.titulo_suave, s.titulo_forte, 'class="t-acc"')}</div></div><div class="compare" data-stagger="0.12"><div class="no" data-reveal="left"><h3>${esc(s.titulo_sem || 'Do jeito comum')}</h3><ul>${s.sem.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="yes" data-reveal="right"><h3>${esc(s.titulo_com || `Com a ${name}`)}</h3><ul>${s.com.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div></div></div></section>`);
+        break;
+      }
+      case 'faq': {
+        const items = (s.itens || []).filter((x) => has(x.pergunta) && has(x.resposta)).slice(0, 8);
+        if (!items.length) break;
+        sections.push(`<section class="sec ${bgCls(s)}"${idAttr}><div class="wrap faq-grid"><div>${label(s.rotulo || 'Dúvidas')}${title('h2', s.titulo_suave, s.titulo_forte || 'Perguntas frequentes', 'class="t-acc"')}</div><div class="faq" data-reveal>${items.map((x, i) => `<details${i === 0 ? ' open' : ''}><summary>${esc(x.pergunta)}</summary><p>${esc(x.resposta)}</p></details>`).join('')}</div></div></section>`);
+        break;
+      }
       case 'html':
         if (has(s.html)) sections.push(`<section class="${bgCls(s)}"${idAttr}>${s.html}</section>`);
         break;

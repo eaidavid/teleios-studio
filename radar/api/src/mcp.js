@@ -20,6 +20,7 @@ import { STAGES } from '../../web/src/data/seed.js';
 import { BLOCKS, HEROES, FOOTERS, FONTS, RADIUS, ANIMS, TEXTS, STYLES, MOTIONS, GOALS, generateDesign } from '../../web/src/sites/generator.js';
 import { derivePalettes } from '../../web/src/sites/colors.js';
 import { renderPremium, FONTS as PFONTS, MOTIFS, TEXTURES, SECTION_TYPES } from './templates/premium.js';
+import { briefMd } from './templates/brief.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const readDoc = (f) => readFileSync(path.join(HERE, f), 'utf8');
@@ -50,6 +51,8 @@ function buildServer() {
     if (tipo === 'previa') {
       const { readdirSync } = await import('node:fs');
       for (const f of readdirSync(path.join(HERE, 'playbook/webdesigner')).sort()) parts.push(readDoc(`playbook/webdesigner/${f}`));
+      // exemplos aprovados (especificações reais de montar_site) — a régua de qualidade
+      for (const f of readdirSync(path.join(HERE, 'playbook/exemplos')).sort()) parts.push(`## Exemplo aprovado: ${f.replace('.json', '')}\n\`\`\`json\n${readDoc(`playbook/exemplos/${f}`)}\n\`\`\``);
     }
     if (extra.length) parts.push(`## Instruções do David para o robô ${bot.name} (prioridade sobre o guia)\n${extra.map((x) => `- ${x}`).join('\n')}`);
     if (tipo === 'previa') parts.push(readDoc('kit/LEIA.md'));
@@ -185,6 +188,16 @@ function buildServer() {
     await completeRequests('previa', lead_id, { link: site.url });
     const fotos = (l.gallery?.length || 0) + (l.sitePhotos?.length || 0);
     return text({ ok: true, link: site.url, fotos_reais_usadas: fotos, aviso: fotos ? undefined : 'Este lead não tem fotos reais: prefira topo "tipografico", serviços em "cartoes" sem foto e um momento autoral em "html".' });
+  });
+
+  server.registerTool('brief_do_lead', {
+    description: 'Briefing mastigado de um lead para a prévia: dados, análise, avaliações reais, fotos, direção escolhida no Radar e um rascunho de especificação do montar_site para você melhorar. Use logo depois do guia_de_criacao.',
+    inputSchema: { lead_id: z.number().int() },
+  }, async ({ lead_id }) => {
+    const l = await getLead(lead_id);
+    if (!l) return fail('Lead não existe.');
+    const { rows } = await q('select direction from sites where lead_id = $1', [lead_id]);
+    return text(briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null }));
   });
 
   server.registerTool('ver_site', {
