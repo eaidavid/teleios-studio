@@ -21,6 +21,7 @@ import { BLOCKS, HEROES, FOOTERS, FONTS, RADIUS, ANIMS, TEXTS, STYLES, MOTIONS, 
 import { derivePalettes } from '../../web/src/sites/colors.js';
 import { renderPremium, FONTS as PFONTS, MOTIFS, TEXTURES, SECTION_TYPES } from './templates/premium.js';
 import { briefMd } from './templates/brief.js';
+import { ensurePhotos, stockPhotosFor } from './stock.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const readDoc = (f) => readFileSync(path.join(HERE, f), 'utf8');
@@ -181,13 +182,14 @@ function buildServer() {
     const l = await getLead(args.lead_id);
     if (!l) return fail(`Lead ${args.lead_id} não existe.`);
     const { lead_id, ...spec } = args;
+    const lp = await ensurePhotos(l, patchLead);
     let html;
-    try { html = renderPremium(spec, l); } catch (e) { return fail(`Não consegui montar: ${e.message}`); }
+    try { html = renderPremium(spec, lp); } catch (e) { return fail(`Não consegui montar: ${e.message}`); }
     const site = await upsertSite({ lead: lead_id, data: { premium: spec }, direction: { conceito: spec.conceito }, html });
     await logActivity('construtor', `Webdesigner montou o site de ${l.brandName || l.name}`);
     await completeRequests('previa', lead_id, { link: site.url });
     const fotos = (l.gallery?.length || 0) + (l.sitePhotos?.length || 0);
-    return text({ ok: true, link: site.url, fotos_reais_usadas: fotos, aviso: fotos ? undefined : 'Este lead não tem fotos reais: prefira topo "tipografico", serviços em "cartoes" sem foto e um momento autoral em "html".' });
+    return text({ ok: true, link: site.url, fotos_reais: fotos, fotos_de_banco: fotos >= 3 ? 0 : (lp.stockPhotos?.length || 0), aviso: fotos >= 3 ? undefined : 'Sem fotos reais suficientes: entraram fotos de banco gratuito (marcadas como ilustrativas). Use buscar_fotos para trocar por buscas mais certeiras.' });
   });
 
   server.registerTool('brief_do_lead', {
@@ -197,7 +199,20 @@ function buildServer() {
     const l = await getLead(lead_id);
     if (!l) return fail('Lead não existe.');
     const { rows } = await q('select direction from sites where lead_id = $1', [lead_id]);
-    return text(briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null }));
+    const recent = (await q("select s.data, coalesce(l.data->>'brandName', l.data->>'name') as nome from sites s join leads l on l.id = s.lead_id where s.data ? 'premium' and s.lead_id <> $1 order by s.updated_at desc limit 5", [lead_id])).rows;
+    return text(briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null, recent }));
+  });
+
+  server.registerTool('buscar_fotos', {
+    description: 'Busca fotos de banco gratuito (Pexels se configurado, senão domínio público) para um lead sem fotos reais, com a busca que você escrever em INGLÊS (ex.: "walnut wood workshop hands", "bright modern kitchen white oak"). Substitui as fotos ilustrativas do lead; depois chame montar_site de novo.',
+    inputSchema: { lead_id: z.number().int(), busca: z.string().min(3), quantidade: z.number().int().min(3).max(12).optional() },
+  }, async ({ lead_id, busca, quantidade = 8 }) => {
+    const l = await getLead(lead_id);
+    if (!l) return fail('Lead não existe.');
+    const photos = await stockPhotosFor(l, quantidade, busca).catch(() => []);
+    if (!photos.length) return fail('Nada encontrado; tente outra busca em inglês, mais simples.');
+    await patchLead(lead_id, { stockPhotos: photos });
+    return text({ ok: true, fotos: photos.map((p) => p.url) });
   });
 
   server.registerTool('ver_site', {

@@ -7,6 +7,7 @@ import { hunt, huntStatus } from './cacador.js';
 import { renderPremium } from './templates/premium.js';
 import { autoSpec } from './templates/autospec.js';
 import { briefMd } from './templates/brief.js';
+import { ensurePhotos } from './stock.js';
 import { waStatus, connect as waConnect, logout as waLogout, sendNow, enqueue, sentTodayCount } from './whatsapp.js';
 
 const SPLIT = ['id', 'stage', 'campaign', 'createdAt'];
@@ -264,9 +265,10 @@ export function registerRoutes(app) {
     const l = await getLead(Number(req.params.lead));
     if (!l) return reply.code(404).send({ error: 'Lead não encontrado.' });
     const direction = req.body?.direction || {};
-    const spec = req.body?.spec || autoSpec(l, direction);
-    const html = renderPremium(spec, l);
-    const site = await upsertSite({ lead: l.id, data: { premium: spec }, direction: { ...direction, conceito: spec.conceito }, html });
+    const lp = await ensurePhotos(l, patchLead);
+    const spec = req.body?.spec || autoSpec(lp, direction);
+    const html = renderPremium(spec, lp);
+    const site = await upsertSite({ lead: l.id, data: { premium: spec }, direction: { ...direction, builder: true, conceito: spec.conceito }, html });
     await logActivity('construtor', `Construtor montou o site de ${l.brandName || l.name}`);
     return { ...site, html: undefined, hasHtml: true };
   });
@@ -275,8 +277,9 @@ export function registerRoutes(app) {
     const l = await getLead(Number(req.params.id));
     if (!l) return reply.code(404).send({ error: 'Lead não encontrado.' });
     const { rows } = await q('select direction from sites where lead_id = $1', [l.id]);
+    const recent = (await q("select s.data, coalesce(l.data->>'brandName', l.data->>'name') as nome from sites s join leads l on l.id = s.lead_id where s.data ? 'premium' and s.lead_id <> $1 order by s.updated_at desc limit 5", [l.id])).rows;
     reply.type('text/markdown; charset=utf-8');
-    return briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null });
+    return briefMd(l, { site: rows[0] ? { direction: rows[0].direction } : null, recent });
   });
 
   app.post('/api/sites/:id/sent', async (req) => {
