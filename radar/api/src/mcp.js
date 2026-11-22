@@ -10,7 +10,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 import { q, leadRow, siteRow, requestRow, completeRequests } from './db.js';
-import { hunt, huntStatus, cleanName } from './cacador.js';
+import { hunt, huntStatus, cleanName, cleanCampaign } from './cacador.js';
 import { enqueue, waStatus } from './whatsapp.js';
 import { kvGet, kvSet } from './db.js';
 import { seedSettings as defaults } from '../../web/src/data/seed.js';
@@ -344,16 +344,27 @@ function buildServer() {
       buscar_agora: z.boolean().optional(),
       profundidade: z.number().int().min(3).max(30).optional().describe('Rolagem na lista do Maps: 10 normal, 20 completa'),
       raio_km: z.number().int().min(3).max(200).optional(),
+      min_avaliacoes: z.number().int().min(0).max(500).optional().describe('Padrão 5. Menos que isso costuma ser negócio pequeno demais.'),
+      nota_minima: z.number().min(0).max(5).optional().describe('Padrão 4,0'),
       motor: z.enum(['google', 'osm']).optional().describe('google (padrão, mais dados) ou osm (gratuito)'),
     },
-  }, async ({ nome, busca, cidade, segmento, filtros = [], buscar_agora, motor = 'google', profundidade = 10, raio_km = 30 }) => {
-    const { rows } = await q('insert into campaigns(data) values ($1) returning id', [{ name: nome, query: busca, city: cidade, category: segmento, filters: filtros, depth: profundidade, radiusKm: raio_km, variants: 5, status: 'running', variantA: '', variantB: '' }]);
+  }, async ({ nome, busca, cidade, segmento, filtros = [], buscar_agora, motor = 'google', profundidade = 10, raio_km = 30, min_avaliacoes = 5, nota_minima = 4 }) => {
+    const { rows } = await q('insert into campaigns(data) values ($1) returning id', [{ name: nome, query: busca, city: cidade, category: segmento, filters: filtros, depth: profundidade, radiusKm: raio_km, variants: 5, minReviews: min_avaliacoes, minRating: nota_minima, status: 'running', variantA: '', variantB: '' }]);
     const id = rows[0].id;
     let busca_status = 'não iniciada';
     if (buscar_agora) {
-      try { await hunt({ id, name: nome, query: busca, city: cidade, category: segmento, depth: profundidade, radiusKm: raio_km, variants: 5 }, { engine: motor, log: (t) => logActivity('cacador', t) }); busca_status = 'rodando (leva alguns minutos; acompanhe com status_busca)'; } catch (e) { busca_status = `não iniciou: ${e.message}`; }
+      try { await hunt({ id, name: nome, query: busca, city: cidade, category: segmento, depth: profundidade, radiusKm: raio_km, variants: 5, minReviews: min_avaliacoes, minRating: nota_minima }, { engine: motor, log: (t) => logActivity('cacador', t) }); busca_status = 'rodando (leva alguns minutos; acompanhe com status_busca)'; } catch (e) { busca_status = `não iniciou: ${e.message}`; }
     }
     return text({ campanha_id: id, busca: busca_status });
+  });
+
+  server.registerTool('limpar_campanha', {
+    description: 'Remove da campanha os leads ainda não abordados que estão fora do segmento (ex.: espaço de eventos numa campanha de planejados) ou abaixo da qualidade mínima (poucas avaliações, nota baixa, sem telefone).',
+    inputSchema: { campanha_id: z.number().int() },
+  }, async ({ campanha_id }) => {
+    const { rows } = await q('select * from campaigns where id = $1', [campanha_id]);
+    if (!rows[0]) return fail('Campanha não existe.');
+    return text(await cleanCampaign(rows[0].id, rows[0].data));
   });
 
   server.registerTool('status_busca', {

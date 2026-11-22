@@ -232,6 +232,11 @@ export const actions = {
     }, 4000);
     return () => clearInterval(t);
   },
+  async cleanCampaign(id) {
+    const r = await api(`/campaigns/${id}/clean`, 'POST');
+    await refresh();
+    return r;
+  },
   /* Caçador: só no servidor */
   async hunt(id, engine = 'google') {
     if (!isApi()) throw new Error('A busca real roda no servidor. Aqui é só demonstração.');

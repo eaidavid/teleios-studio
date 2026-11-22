@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { q, leadRow, siteRow, kvGet, kvSet, requestRow } from './db.js';
 import { analyze } from '../../web/src/data/analysis.js';
 import { seedBots, seedSettings } from '../../web/src/data/seed.js';
-import { hunt, huntStatus } from './cacador.js';
+import { hunt, huntStatus, cleanCampaign } from './cacador.js';
 import { renderPremium } from './templates/premium.js';
 import { autoSpec } from './templates/autospec.js';
 import { briefMd } from './templates/brief.js';
@@ -168,6 +168,13 @@ export function registerRoutes(app) {
     try {
       return await hunt({ ...rows[0].data, id: rows[0].id }, { engine: req.body?.engine || 'google', log: (t) => logActivity('cacador', t) });
     } catch (e) { return reply.code(409).send({ error: e.message }); }
+  });
+  app.post('/api/campaigns/:id/clean', async (req, reply) => {
+    const { rows } = await q('select * from campaigns where id = $1', [Number(req.params.id)]);
+    if (!rows[0]) return reply.code(404).send({ error: 'Campanha não encontrada.' });
+    const r = await cleanCampaign(rows[0].id, rows[0].data);
+    if (r.removed) await logActivity('cacador', `limpou ${r.removed} leads fora do segmento ou abaixo da qualidade em "${rows[0].data.name}"`);
+    return r;
   });
   app.get('/api/campaigns/:id/hunt', async (req) => {
     const live = huntStatus(req.params.id);

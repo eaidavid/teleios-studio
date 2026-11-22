@@ -94,12 +94,43 @@ export function formatHours(raw) {
   return { text, table: Object.fromEntries(rows) };
 }
 
-/* Fora do segmento (aparecem nas buscas, mas não são o público da campanha) */
-const EXCLUDE = {
-  'Móveis planejados': /colch|eletro|estofad|sof[aá]\b|tapete|cama box|loja de departamento|material de constru|madeireira|vidra[cç]aria|imobili/i,
-  'Clínica de estética': /farm[aá]cia|perfumaria|loja de cosm/i,
-  Restaurante: /supermercado|distribuidora|atacad/i,
+/* Relevância: só entra quem tem o ramo no NOME ou na CATEGORIA do Google (lista positiva),
+   e nunca quem bate na lista negativa (aparecem nas buscas, mas não são o público). */
+const INCLUDE = {
+  'Móveis planejados': /marcen|planejad|m[oó]ve(l|is)|mobili|arm[aá]rio|cozinhas?\b|closet|interiores|ambientes|sob medida|mdf|carpintaria|woodshop|wood|madeira/i,
+  'Clínica de estética': /est[eé]tic|beleza|spa\b|depila|harmoniza|skin|dermato|sobrancelha|micropig|laser|massag/i,
+  Odontologia: /odont|dent|sorriso|orto|implant/i,
+  Academia: /academia|fitness|gym|crossfit|muscula|treino|funcional|box\b|pilates/i,
+  Restaurante: /restaurante|pizz|hamburg|burger|lanchonete|churrasc|cantina|bistr|caf[eé]|padaria|comida|culin|sushi|food|gastronom|self.?service|marmit/i,
+  'Pet shop': /pet|veterin|animal|banho e tosa|dog|cão|cao|gato/i,
+  Ótica: /[oó]tica|[oó]culos|optic|lentes/i,
+  Advocacia: /advoca|advogad|jur[ií]dic|direito|law/i,
+  Barbearia: /barbe|barber|cabeleir/i,
+  Fisioterapia: /fisio|pilates|rpg|reabilita|quiropra|osteopat/i,
+  Imobiliária: /imobili|im[oó]ve(l|is)|corretor|realty|empreendimento/i,
 };
+const EXCLUDE = {
+  'Móveis planejados': /colch|eletro|estofad|sof[aá]s?\b|tapete|cama box|loja de departamento|material de constru|madeireira|vidra[cç]aria|imobili|evento|festa|buffet|ch[aá]cara|sal[aã]o de|espa[cç]o (para|de) |piscina|pousada|hotel|motel|igreja|escola|mercado|farm[aá]cia|auto ?pe[cç]as|oficina mec|posto|lava.?jato|fibra|vime|bambu|cadeira de escrit|office/i,
+  'Clínica de estética': /farm[aá]cia|perfumaria|loja de cosm|distribuidor/i,
+  Restaurante: /supermercado|distribuidora|atacad|evento|buffet infantil/i,
+  Academia: /loja de suplement|suplementos/i,
+  'Pet shop': /agropecu|ra[cç][aã]o atacad/i,
+};
+export function relevance(category, title = '', googleCategory = '') {
+  const text = `${title} ${googleCategory}`;
+  if (EXCLUDE[category]?.test(text)) return 'fora';
+  if (INCLUDE[category] && !INCLUDE[category].test(text)) return 'fora';
+  return 'ok';
+}
+/* Qualidade mínima (padrões ajustáveis por campanha) */
+export function quality(data, c = {}) {
+  const minReviews = c.minReviews ?? 5;
+  const minRating = c.minRating ?? 4;
+  if (c.requirePhone !== false && !String(data.phone || '').replace(/\D/g, '')) return 'sem telefone';
+  if ((data.reviews || 0) < minReviews) return `menos de ${minReviews} avaliações`;
+  if (data.rating && data.rating < minRating) return `nota abaixo de ${String(minRating).replace('.', ',')}`;
+  return 'ok';
+}
 
 /* Linha do Google Maps -> lead */
 function fromGoogle(r, campaign) {
@@ -111,7 +142,7 @@ function fromGoogle(r, campaign) {
   const site = String(r.website || r.web_site || '').trim();
   return {
     placeKey: r.place_id || r.cid || r.data_id || `${r.title}|${r.address}`,
-    excluded: EXCLUDE[category]?.test(`${r.category} ${r.title}`) || false,
+    excluded: campaign?.category ? relevance(category, r.title, r.category) !== 'ok' : false,
     data: {
       name: r.title || 'Sem nome',
       brandName: cleanName(r.title || ''),
@@ -368,6 +399,7 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
           if (seen.has(it.placeKey)) return false; seen.add(it.placeKey);
           if (/fechado permanentemente|permanently closed/i.test(it.data.status || '')) return false;
           if (it.excluded) { st.offTopic = (st.offTopic || 0) + 1; return false; }
+          if (quality(it.data, campaign) !== 'ok') { st.lowQuality = (st.lowQuality || 0) + 1; return false; }
           if (geo && it.data.lat && it.data.lng && distKm(geo, { lat: it.data.lat, lon: it.data.lng }) > radius) { st.far = (st.far || 0) + 1; return false; }
           return true;
         });
@@ -416,3 +448,16 @@ export async function resumeHunts(log) {
 }
 
 export { leadRow };
+
+/* Limpa leads já importados que estão fora do segmento ou abaixo da qualidade (só os ainda não abordados) */
+export async function cleanCampaign(id, c) {
+  const { rows } = await q("select id, data from leads where campaign_id = $1 and stage = 'found'", [id]);
+  const removed = [];
+  for (const r of rows) {
+    const d = r.data;
+    const why = relevance(c.category, d.name, d.googleCategory) !== 'ok' ? 'fora do segmento' : quality(d, c) !== 'ok' ? quality(d, c) : null;
+    if (why) removed.push({ id: r.id, name: d.name, why });
+  }
+  if (removed.length) await q('delete from leads where id = any($1)', [removed.map((x) => x.id)]);
+  return { removed: removed.length, detalhes: removed.slice(0, 50) };
+}
