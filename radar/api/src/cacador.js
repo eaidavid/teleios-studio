@@ -7,6 +7,9 @@
 import { q, leadRow, kvGet } from './db.js';
 import { CATEGORIES } from '../../web/src/data/seed.js';
 import { analyze } from '../../web/src/data/analysis.js';
+import { auditHtml, pagespeed, reviewInsights } from './audit.js';
+import { lookupLead, searchByCnae } from './cnpj.js';
+import { checkWhatsapp } from './whatsapp.js';
 
 const SCRAPER = () => process.env.SCRAPER_URL || 'http://google-maps-scraper:8080';
 const UA = 'TeleiosRadar/1.0 (+https://agenciateleios.com.br)';
@@ -148,6 +151,7 @@ function fromGoogle(r, campaign) {
       brandName: cleanName(r.title || ''),
       gallery,
       reviewSamples: reviewsOf(r),
+      reviewInsights: reviewInsights(asJson(r.user_reviews_extended) || asJson(r.user_reviews) || []),
       category,
       googleCategory: r.category || '',
       contact: '',
@@ -222,12 +226,12 @@ export async function geocode(city) {
 
 async function gosomCreate({ keywords, lang = 'pt', depth = 10, email = true, maxTime = 1500, geo }) {
   // Versão web clássica do projeto: aceita várias palavras-chave num só trabalho
-  const body = { name: keywords[0], keywords, lang, depth, email, max_time: maxTime, zoom: 13 };
+  const body = { name: keywords[0], keywords, lang, depth, email, extra_reviews: true, max_time: maxTime, zoom: 13 };
   if (geo) Object.assign(body, { lat: String(geo.lat), lon: String(geo.lon), radius: 15000 });
   let res = await fetch(`${SCRAPER()}/api/v1/jobs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   if (res.ok) { const j = await res.json(); return { id: j.id || j.job_id, api: 'jobs' }; }
   // Versão nova (POST /api/v1/scrape): uma palavra-chave por trabalho, usamos a principal
-  const nb = { keyword: keywords[0], lang, max_depth: depth, email, timeout: 300 };
+  const nb = { keyword: keywords[0], lang, max_depth: depth, email, extra_reviews: true, timeout: 300 };
   if (geo) Object.assign(nb, { geo_coordinates: `${geo.lat},${geo.lon}`, zoom: 13, radius: 15 });
   res = await fetch(`${SCRAPER()}/api/v1/scrape`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(nb) });
   if (!res.ok) throw new Error(`O Caçador (Google Maps) não aceitou o trabalho: HTTP ${res.status}`);
@@ -344,14 +348,17 @@ export async function enrich(data) {
       .filter((u) => u && !/logo|icon|sprite|avatar|whats|favicon|banner-?pix|payment|selo|badge/i.test(u));
     const sitePhotos = [...new Set([...og, ...imgs].filter(Boolean))].slice(0, 10);
     const logo = abs(html.match(/<img[^>]+(?:src)=["']([^"']*logo[^"']*)["']/i)?.[1] || '') || null;
+    const audit = auditHtml(html, res.url);
     return {
       ...data,
+      siteAudit: audit,
+      ads: data.ads || audit.googleAds || audit.metaPixel,
       instagram: data.instagram || (ig && !['p', 'reel', 'explore', 'accounts'].includes(ig.toLowerCase()) ? `@${ig}` : ''),
       email: data.email || (mail && !/\.(png|jpe?g|webp|svg)$/i.test(mail) ? mail : ''),
       site: {
-        mobile: /<meta[^>]+name=["']viewport/i.test(html),
+        mobile: audit.mobileViewport,
         speed: Math.max(10, Math.min(98, Math.round(100 - ms / 80))),
-        booking: /wa\.me|api\.whatsapp|agend|booking|calendly/i.test(html),
+        booking: audit.whatsappButton || audit.booking,
         https: res.url.startsWith('https://'),
       },
       brand: colors.length ? { source: 'site', colors, logo } : (logo ? { ...(data.brand || {}), logo } : data.brand),
@@ -360,6 +367,46 @@ export async function enrich(data) {
   } catch {
     return { ...data, site: { mobile: false, speed: 10, booking: false, https: false, offline: true } };
   }
+}
+
+/* Enriquecimento completo de um lead: site + PageSpeed + CNPJ/decisor + WhatsApp */
+export async function deepEnrich(data) {
+  let d = data.website && !data.siteAudit ? await enrich(data) : data;
+  if (d.website && !d.site?.offline && !d.pagespeed) {
+    const ps = await pagespeed(d.websiteUrl || `https://${d.website}`);
+    if (ps) d = { ...d, pagespeed: ps, site: { ...(d.site || {}), speed: ps.score, mobile: d.site?.mobile && ps.score >= 50 } };
+  }
+  if (!d.company) {
+    const c = await lookupLead(d).catch(() => null);
+    if (c) {
+      d = { ...d, company: { ...c.company, match: c.match }, decisor: c.decisor || d.decisor || null, email: d.email || c.company.email || '' };
+      if (!d.contact && c.decisor) d.contact = `${c.decisor.nome.split(' ')[0]}, ${c.decisor.cargo.toLowerCase()}`;
+    }
+  }
+  if (d.phone && d.waValid === undefined) {
+    const w = await checkWhatsapp(d.phone);
+    if (w) d = { ...d, waValid: w.exists, whatsapp: w.exists, ...(w.jid ? { waJid: w.jid } : {}) };
+  }
+  return d;
+}
+
+/* Lead vindo só da Receita (empresas ativas do ramo na cidade) */
+function fromCnpj(x, campaign) {
+  const c = x.company;
+  const tel = c.telefones?.[0] || '';
+  const phone = tel.length >= 10 ? `(${tel.slice(0, 2)}) ${tel.slice(2, -4)}-${tel.slice(-4)}` : '';
+  const name = c.fantasia || String(c.razao || 'Sem nome').replace(/^[\d.\s-]+/, '');
+  return {
+    placeKey: `cnpj:${c.cnpj}`,
+    data: {
+      name, brandName: cleanName(name), category: campaign.category, googleCategory: c.cnaeDesc || '', contact: x.decisor ? `${x.decisor.nome.split(' ')[0]}, ${x.decisor.cargo.toLowerCase()}` : '',
+      city: campaign.city, neighborhood: c.bairro ? c.bairro.charAt(0) + c.bairro.slice(1).toLowerCase() : '', address: c.endereco || '', phone,
+      whatsapp: /^\(\d{2}\) 9/.test(phone), website: '', site: null, instagram: '', social: null, email: c.email || '', rating: 0, reviews: 0,
+      unanswered: 0, photos: 0, ads: false, hours: '', tags: ['Receita'], notes: [], analysis: null, blocked: '', owner: 'David', next: 'Na fila de abordagem',
+      palette: CATEGORIES[campaign.category]?.palette || ['#F2EFE9', '#14181D', '#00C48C'], brand: null, source: 'cnpj',
+      company: { ...c, match: 'cnae' }, decisor: x.decisor,
+    },
+  };
 }
 
 /* ---------- execução de uma campanha ---------- */
@@ -379,7 +426,11 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
   (async () => {
     try {
       let items;
-      if (engine === 'osm') {
+      if (engine === 'cnpj') {
+        st.step = 'consultando a base da Receita Federal';
+        items = (await searchByCnae(campaign.category, campaign.city, Number(campaign.cnpjLimit) || 300)).map((x) => fromCnpj(x, campaign));
+        st.raw = items.length;
+      } else if (engine === 'osm') {
         st.step = 'consultando o OpenStreetMap';
         items = await osmSearch(campaign.category, campaign.city);
       } else {
@@ -420,7 +471,14 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
           if (Object.keys(add).length) await q('update leads set data = data || $2 where id = $1', [exists.rows[0].id, add]);
           continue;
         }
-        const data = await enrich(it.data);
+        // Já está no funil por outro caminho (mesmo CNPJ ou telefone)? Não duplica.
+        if (it.data.company?.cnpj) {
+          const dup = await q("select 1 from leads where data->'company'->>'cnpj' = $1 limit 1", [it.data.company.cnpj]);
+          if (dup.rows.length) continue;
+        }
+        st.step = `analisando ${i + 1}/${items.length}: site, CNPJ e WhatsApp`;
+        const data = await deepEnrich(await enrich(it.data));
+        if (engine === 'cnpj' && data.waValid === false) continue; // só fica quem tem WhatsApp
         if (ai?.ai?.analyzeOnFind !== false) data.analysis = analyze(data);
         data.campaign = id;
         await q('insert into leads(stage, campaign_id, place_key, data) values ($1, $2, $3, $4) on conflict (place_key) do nothing', ['found', id, it.placeKey, data]);
@@ -460,4 +518,30 @@ export async function cleanCampaign(id, c) {
   }
   if (removed.length) await q('delete from leads where id = any($1)', [removed.map((x) => x.id)]);
   return { removed: removed.length, detalhes: removed.slice(0, 50) };
+}
+
+/* Enriquecer leads que já estão no funil (site, PageSpeed, CNPJ/decisor, WhatsApp) */
+const enrichJobs = new Map();
+export const enrichStatus = (id) => enrichJobs.get(String(id)) || null;
+export async function enrichCampaign(id, log = () => {}) {
+  const key = String(id);
+  if (enrichJobs.get(key)?.state === 'running') throw new Error('Já está enriquecendo essa campanha.');
+  const { rows } = await q('select id, data from leads where campaign_id = $1 order by created_at', [id]);
+  const st = { state: 'running', total: rows.length, done: 0, cnpj: 0, decisor: 0, waOk: 0, waNo: 0, startedAt: Date.now() };
+  enrichJobs.set(key, st);
+  (async () => {
+    for (const r of rows) {
+      try {
+        const d = await deepEnrich(r.data);
+        if (d.analysis || r.data.analysis) d.analysis = analyze(d);
+        await q('update leads set data = $2, updated_at = now() where id = $1', [r.id, d]);
+        if (d.company) st.cnpj++; if (d.decisor) st.decisor++; if (d.waValid === true) st.waOk++; if (d.waValid === false) st.waNo++;
+      } catch { /* segue para o próximo */ }
+      st.done++;
+      await new Promise((res) => setTimeout(res, 600));
+    }
+    st.state = 'done'; st.endedAt = Date.now();
+    log(`enriqueceu ${st.done} leads: ${st.cnpj} com CNPJ, ${st.decisor} com decisor, ${st.waOk} com WhatsApp confirmado`);
+  })();
+  return st;
 }

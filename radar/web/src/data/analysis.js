@@ -26,7 +26,10 @@ export function analyze(lead) {
   } else {
     site = 15;
     if (!lead.site?.mobile) { site += 40; gaps.push({ area: 'Site', severity: 'alta', title: 'Site ruim no celular', detail: 'A maioria das visitas vem do celular e o layout quebra.' }); }
-    if ((lead.site?.speed ?? 80) < 50) { site += 25; gaps.push({ area: 'Site', severity: 'media', title: `Site lento (nota ${lead.site.speed}/100)`, detail: 'Páginas lentas perdem visitantes antes de carregar.' }); }
+    if ((lead.site?.speed ?? 80) < 50) { site += 25; gaps.push({ area: 'Site', severity: 'media', title: `Site lento (nota ${lead.site.speed}/100${lead.pagespeed ? ' no Google PageSpeed' : ''})`, detail: lead.pagespeed?.lcp ? `No celular, o conteúdo principal leva ${lead.pagespeed.lcp} para aparecer.` : 'Páginas lentas perdem visitantes antes de carregar.' }); }
+    const au = lead.siteAudit;
+    if (au?.abandoned) { site += 15; gaps.push({ area: 'Site', severity: 'media', title: `Site parado desde ${au.copyrightYear}`, detail: 'Rodapé desatualizado passa a impressão de empresa parada.' }); }
+    if (au && !au.metaPixel && !au.googleAds && !au.analytics) { site += 5; gaps.push({ area: 'Site', severity: 'baixa', title: 'Site sem medição (sem Pixel, Google Ads ou Analytics)', detail: 'Não dá para saber quantas visitas viram contato, nem anunciar para quem já visitou.' }); }
     if (!lead.site?.booking) { site += 15; gaps.push({ area: 'Site', severity: 'baixa', title: 'Sem agendamento ou botão de WhatsApp', detail: 'O visitante precisa procurar como entrar em contato.' }); }
   }
   // Redes
@@ -43,9 +46,13 @@ export function analyze(lead) {
   // Reputação
   let reputation = 20;
   if (lead.reviews < 50) { reputation += 45; gaps.push({ area: 'Reputação', severity: 'media', title: `Só ${lead.reviews} avaliações no Google`, detail: 'Concorrentes com mais avaliações aparecem antes.' }); }
+  const unans = lead.reviewInsights?.unansweredPct ?? lead.unanswered;
+  if (lead.reviewInsights?.unansweredPct != null) lead = { ...lead, unanswered: unans };
+  if (lead.reviewInsights?.complaints?.length) gaps.push({ area: 'Reputação', severity: 'baixa', title: `${lead.reviewInsights.complaints.length} reclamação(ões) recente(s) no Google`, detail: `Ex.: "${lead.reviewInsights.complaints[0].text.slice(0, 90)}…"` });
   if (lead.unanswered > 40) { reputation += 35; gaps.push({ area: 'Reputação', severity: 'media', title: `${lead.unanswered}% das avaliações sem resposta`, detail: 'Responder avaliações mostra cuidado e melhora a posição no Maps.' }); }
   if (lead.photos < 15) { reputation += 15; gaps.push({ area: 'Reputação', severity: 'baixa', title: `Poucas fotos no Google (${lead.photos})`, detail: 'Fotos aumentam cliques no perfil do Maps.' }); }
   // Anúncios
+  if (!lead.website && lead.company?.idadeAnos != null && lead.company.idadeAnos <= 2) gaps.push({ area: 'Site', severity: 'media', title: `Empresa nova (aberta há ${lead.company.idadeAnos || 'menos de 1'} ano${lead.company.idadeAnos === 1 ? '' : 's'}) e sem site`, detail: 'Fase em que mais precisa ser encontrada por quem ainda não conhece.' });
   const ads = lead.ads ? 25 : 65;
   if (!lead.ads) gaps.push({ area: 'Anúncios', severity: 'baixa', title: 'Não anuncia', detail: 'Concorrentes que anunciam aparecem primeiro para quem busca na região.' });
 

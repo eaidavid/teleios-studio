@@ -232,6 +232,15 @@ export const actions = {
     }, 4000);
     return () => clearInterval(t);
   },
+  async enrichLead(id) {
+    const lead = await api(`/leads/${id}/enrich`, 'POST');
+    set((s) => ({ ...s, leads: s.leads.map((l) => (l.id === id ? { ...l, ...lead } : l)) }));
+    return lead;
+  },
+  async enrichCampaign(id) { return api(`/campaigns/${id}/enrich`, 'POST'); },
+  enrichStatus(id) { return api(`/campaigns/${id}/enrich`); },
+  cnpjStatus() { return api('/cnpj'); },
+  cnpjImport() { return api('/cnpj/import', 'POST'); },
   async cleanCampaign(id) {
     const r = await api(`/campaigns/${id}/clean`, 'POST');
     await refresh();

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BadgeDollarSign, CalendarClock, Clock, Copy, ExternalLink, Globe, Instagram, LayoutTemplate, Mail, MapPin, Megaphone, MessageCircle, MessagesSquare,
-  NotebookPen, Pencil, Phone, RefreshCw, ScanSearch, Send, Sparkles, Star, Target, Trash2, User, X, Zap,
+  NotebookPen, Pencil, Phone, RefreshCw, ScanSearch, Send, Sparkles, Star, Target, Trash2, User, X, Zap, Building2, Crown, Gauge,
 } from 'lucide-react';
 import { actions, useStore } from '../data/store';
 import { AskClaude } from '../components/ClaudeQueue';
@@ -157,6 +157,8 @@ export default function LeadDrawer({ id, onClose }) {
   const lead = useStore((s) => s.leads.find((l) => l.id === id));
   const conv = useStore((s) => s.conversations[id]);
   const [tab, setTab] = useState('geral');
+  const [enriching, setEnriching] = useState(false);
+  const live = useStore((s) => s.session.mode === 'api');
   useEffect(() => { if (id) setTab('geral'); }, [id]);
 
   const del = () => { const undo = actions.deleteLeads([id]); onClose(); toast('Lead excluído', undo); };
@@ -201,17 +203,19 @@ export default function LeadDrawer({ id, onClose }) {
                       </select>
                     </label>
                     <dl className="dl">
-                      <div><dt><User size={12} />Contato</dt><dd>{lead.contact}</dd></div>
-                      <div><dt><Phone size={12} />Telefone</dt><dd>{lead.phone} {lead.whatsapp ? <span className="pill ok" style={{ marginLeft: 6 }}><MessageCircle />WhatsApp</span> : <span className="pill bad" style={{ marginLeft: 6 }}>Sem WhatsApp</span>}</dd></div>
+                      <div><dt><Crown size={12} />Decisor</dt><dd>{lead.decisor ? <>{lead.decisor.nome} <span className="faint">· {lead.decisor.cargo}</span><div className="faint" style={{ fontSize: 12 }}>Fonte: {lead.decisor.fonte}</div></> : <span className="faint">{lead.contact || 'Não identificado'}</span>}</dd></div>
+                      <div><dt><Phone size={12} />Telefone</dt><dd>{lead.phone} {lead.waValid === true ? <span className="pill ok" style={{ marginLeft: 6 }}><MessageCircle />WhatsApp confirmado</span> : lead.waValid === false ? <span className="pill bad" style={{ marginLeft: 6 }}>Sem WhatsApp</span> : lead.whatsapp ? <span className="pill" style={{ marginLeft: 6 }}><MessageCircle />Provável WhatsApp</span> : <span className="pill bad" style={{ marginLeft: 6 }}>Sem WhatsApp</span>}</dd></div>
+                      {lead.company && <div><dt><Building2 size={12} />Empresa</dt><dd>{lead.company.razao || lead.company.fantasia}<div className="faint" style={{ fontSize: 12 }}>CNPJ {String(lead.company.cnpj).replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')}{lead.company.abertura ? ` · aberta em ${lead.company.abertura.split('-').reverse().join('/')}` : ''}{lead.company.porte ? ` · ${lead.company.mei ? 'MEI' : lead.company.porte}` : ''}{lead.company.cnaeDesc ? ` · ${lead.company.cnaeDesc}` : ''}</div></dd></div>}
                       <div><dt><MapPin size={12} />Endereço</dt><dd>{lead.address} · {lead.neighborhood}, {lead.city}</dd></div>
                       <div><dt><CalendarClock size={12} />Horário</dt><dd>{lead.hours}</dd></div>
-                      <div><dt><Globe size={12} />Site</dt><dd>{lead.website ? <a href={`https://${lead.website}`} target="_blank" rel="noreferrer">{lead.website} <ExternalLink size={11} /></a> : <span className="faint">Não tem</span>}{lead.site && <div className="faint" style={{ fontSize: 12 }}>Velocidade {lead.site.speed}/100 · {lead.site.mobile ? 'ok no celular' : 'ruim no celular'}</div>}</dd></div>
-                      <div><dt><Instagram size={12} />Instagram</dt><dd>{lead.instagram || <span className="faint">Não tem</span>}{lead.social && <div className="faint" style={{ fontSize: 12 }}>{lead.social.followers.toLocaleString('pt-BR')} seguidores · último post há {lead.social.lastPostDays} dias</div>}</dd></div>
-                      <div><dt><Star size={12} />Google</dt><dd>★ {String(lead.rating).replace('.', ',')} · {lead.reviews} avaliações<div className="faint" style={{ fontSize: 12 }}>{lead.unanswered}% sem resposta · {lead.photos} fotos</div></dd></div>
+                      <div><dt><Globe size={12} />Site</dt><dd>{lead.website ? <a href={`https://${lead.website}`} target="_blank" rel="noreferrer">{lead.website} <ExternalLink size={11} /></a> : <span className="faint">Não tem</span>}{lead.site && !lead.site.offline && <div className="faint" style={{ fontSize: 12 }}>{lead.pagespeed ? `PageSpeed ${lead.pagespeed.score}/100${lead.pagespeed.lcp ? ` · carrega em ${lead.pagespeed.lcp}` : ''}` : `Velocidade ${lead.site.speed}/100`}{lead.siteAudit?.platform ? ` · ${lead.siteAudit.platform}` : ''}{lead.siteAudit?.abandoned ? ` · parado desde ${lead.siteAudit.copyrightYear}` : ''}</div>}{lead.siteAudit && <div className="faint" style={{ fontSize: 12 }}>{[lead.siteAudit.metaPixel && 'Pixel do Meta', lead.siteAudit.googleAds && 'Google Ads', lead.siteAudit.analytics && 'Analytics', lead.siteAudit.whatsappButton && 'botão de WhatsApp'].filter(Boolean).join(' · ') || 'Sem Pixel, Ads, Analytics ou botão de WhatsApp'}</div>}{lead.site?.offline && <div className="faint" style={{ fontSize: 12 }}>Não abriu na verificação</div>}</dd></div>
+                      <div><dt><Instagram size={12} />Instagram</dt><dd>{lead.instagram || <span className="faint">Não tem</span>}{lead.social && (lead.social.followers != null || lead.social.lastPostDays != null) && <div className="faint" style={{ fontSize: 12 }}>{lead.social.followers != null ? `${Number(lead.social.followers).toLocaleString('pt-BR')} seguidores` : ''}{lead.social.lastPostDays != null ? ` · último post há ${lead.social.lastPostDays} dias` : ''}</div>}</dd></div>
+                      <div><dt><Star size={12} />Google</dt><dd>★ {String(lead.rating).replace('.', ',')} · {lead.reviews} avaliações<div className="faint" style={{ fontSize: 12 }}>{lead.reviewInsights?.unansweredPct != null ? `${lead.reviewInsights.unansweredPct}% sem resposta do dono · ` : ''}{lead.photos} fotos</div></dd></div>
                       <div><dt><Mail size={12} />E-mail</dt><dd>{lead.email || <span className="faint">Não encontrado</span>}</dd></div>
                       <div><dt><Megaphone size={12} />Anúncios</dt><dd>{lead.ads ? 'Anuncia no Google/Meta' : 'Não anuncia'}</dd></div>
                       <div><dt><Zap size={12} />Próximo passo</dt><dd>{lead.next}</dd></div>
                     </dl>
+                    {live && <button type="button" className="btn btn-ghost btn-sm" style={{ justifySelf: 'start' }} disabled={enriching} onClick={() => { setEnriching(true); actions.enrichLead(lead.id).then(() => toast('Lead enriquecido: site, CNPJ, decisor e WhatsApp'), (e) => toast(e.message)).finally(() => setEnriching(false)); }}><RefreshCw size={13} className={enriching ? 'spin' : ''} />{enriching ? 'Enriquecendo…' : 'Enriquecer (site, CNPJ, decisor, WhatsApp)'}</button>}
                     {lead.analysis && (
                       <button type="button" className="ai-sug" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => setTab('ia')}>
                         <Sparkles size={15} /><span><b>Resumo da IA:</b> {lead.analysis.summary} <span className="link">Ver análise completa</span></span>

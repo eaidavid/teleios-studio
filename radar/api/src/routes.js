@@ -3,7 +3,8 @@ import { randomBytes } from 'node:crypto';
 import { q, leadRow, siteRow, kvGet, kvSet, requestRow } from './db.js';
 import { analyze } from '../../web/src/data/analysis.js';
 import { seedBots, seedSettings } from '../../web/src/data/seed.js';
-import { hunt, huntStatus, cleanCampaign } from './cacador.js';
+import { hunt, huntStatus, cleanCampaign, deepEnrich, enrichCampaign, enrichStatus } from './cacador.js';
+import { importCnpj, importStatus } from './cnpj.js';
 import { renderPremium } from './templates/premium.js';
 import { autoSpec } from './templates/autospec.js';
 import { briefMd } from './templates/brief.js';
@@ -175,6 +176,23 @@ export function registerRoutes(app) {
     const r = await cleanCampaign(rows[0].id, rows[0].data);
     if (r.removed) await logActivity('cacador', `limpou ${r.removed} leads fora do segmento ou abaixo da qualidade em "${rows[0].data.name}"`);
     return r;
+  });
+  /* Enriquecimento (site, PageSpeed, CNPJ/decisor, WhatsApp) */
+  app.post('/api/campaigns/:id/enrich', async (req, reply) => {
+    try { return await enrichCampaign(Number(req.params.id), (t) => logActivity('analista', t)); } catch (e) { return reply.code(409).send({ error: e.message }); }
+  });
+  app.get('/api/campaigns/:id/enrich', async (req) => enrichStatus(req.params.id) || { state: 'idle' });
+  app.post('/api/leads/:id/enrich', async (req, reply) => {
+    const l = await getLead(Number(req.params.id));
+    if (!l) return reply.code(404).send({ error: 'Lead não encontrado.' });
+    const d = await deepEnrich({ ...l, siteAudit: undefined, pagespeed: undefined, company: undefined, waValid: undefined });
+    d.analysis = analyze(d);
+    return patchLead(l.id, d);
+  });
+  /* Base do CNPJ */
+  app.get('/api/cnpj', async () => importStatus());
+  app.post('/api/cnpj/import', async (req, reply) => {
+    try { return await importCnpj((t) => logActivity('cacador', t)); } catch (e) { return reply.code(409).send({ error: e.message }); }
   });
   app.get('/api/campaigns/:id/hunt', async (req) => {
     const live = huntStatus(req.params.id);

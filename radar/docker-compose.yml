@@ -13,6 +13,8 @@ services:
       PREVIEW_URL: ${PREVIEW_URL:-https://radar.agenciateleios.com.br/p}
       SCRAPER_URL: http://google-maps-scraper:8080
       PEXELS_API_KEY: ${PEXELS_API_KEY:-}
+      PAGESPEED_API_KEY: ${PAGESPEED_API_KEY:-}
+      CNPJ_UFS: ${CNPJ_UFS:-GO}
     volumes:
       - radar-data:/data   # sessão do WhatsApp (não apaga ao atualizar)
     depends_on:
