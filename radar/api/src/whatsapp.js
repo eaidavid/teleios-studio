@@ -181,3 +181,14 @@ export async function enqueue(leadId, text, by = 'Redator') {
   if (rows.length) await q("update outbox set text = $2 where lead_id = $1 and status = 'pending'", [leadId, text]);
   else await q('insert into outbox(lead_id, text, by) values ($1, $2, $3)', [leadId, text, by]);
 }
+
+/* Confere se um telefone tem WhatsApp (só com o número conectado) */
+export async function checkWhatsapp(phone) {
+  if (wa.state !== 'open') return null;
+  const d = toDigits(phone);
+  if (d.length < 12) return { exists: false };
+  try {
+    const [r] = await wa.sock.onWhatsApp(d);
+    return { exists: !!r?.exists, jid: r?.jid || null, lid: r?.lid || null };
+  } catch { return null; }
+}

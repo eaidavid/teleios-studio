@@ -7,6 +7,9 @@
 import { q, leadRow, kvGet } from './db.js';
 import { CATEGORIES } from '../../web/src/data/seed.js';
 import { analyze } from '../../web/src/data/analysis.js';
+import { auditHtml, pagespeed, reviewInsights } from './audit.js';
+import { lookupLead, searchByCnae } from './cnpj.js';
+import { checkWhatsapp } from './whatsapp.js';
 
 const SCRAPER = () => process.env.SCRAPER_URL || 'http://google-maps-scraper:8080';
 const UA = 'TeleiosRadar/1.0 (+https://agenciateleios.com.br)';
@@ -94,12 +97,43 @@ export function formatHours(raw) {
   return { text, table: Object.fromEntries(rows) };
 }
 
-/* Fora do segmento (aparecem nas buscas, mas não são o público da campanha) */
-const EXCLUDE = {
-  'Móveis planejados': /colch|eletro|estofad|sof[aá]\b|tapete|cama box|loja de departamento|material de constru|madeireira|vidra[cç]aria|imobili/i,
-  'Clínica de estética': /farm[aá]cia|perfumaria|loja de cosm/i,
-  Restaurante: /supermercado|distribuidora|atacad/i,
+/* Relevância: só entra quem tem o ramo no NOME ou na CATEGORIA do Google (lista positiva),
+   e nunca quem bate na lista negativa (aparecem nas buscas, mas não são o público). */
+const INCLUDE = {
+  'Móveis planejados': /marcen|planejad|m[oó]ve(l|is)|mobili|arm[aá]rio|cozinhas?\b|closet|interiores|ambientes|sob medida|mdf|carpintaria|woodshop|wood|madeira/i,
+  'Clínica de estética': /est[eé]tic|beleza|spa\b|depila|harmoniza|skin|dermato|sobrancelha|micropig|laser|massag/i,
+  Odontologia: /odont|dent|sorriso|orto|implant/i,
+  Academia: /academia|fitness|gym|crossfit|muscula|treino|funcional|box\b|pilates/i,
+  Restaurante: /restaurante|pizz|hamburg|burger|lanchonete|churrasc|cantina|bistr|caf[eé]|padaria|comida|culin|sushi|food|gastronom|self.?service|marmit/i,
+  'Pet shop': /pet|veterin|animal|banho e tosa|dog|cão|cao|gato/i,
+  Ótica: /[oó]tica|[oó]culos|optic|lentes/i,
+  Advocacia: /advoca|advogad|jur[ií]dic|direito|law/i,
+  Barbearia: /barbe|barber|cabeleir/i,
+  Fisioterapia: /fisio|pilates|rpg|reabilita|quiropra|osteopat/i,
+  Imobiliária: /imobili|im[oó]ve(l|is)|corretor|realty|empreendimento/i,
 };
+const EXCLUDE = {
+  'Móveis planejados': /colch|eletro|estofad|sof[aá]s?\b|tapete|cama box|loja de departamento|material de constru|madeireira|vidra[cç]aria|imobili|evento|festa|buffet|ch[aá]cara|sal[aã]o de|espa[cç]o (para|de) |piscina|pousada|hotel|motel|igreja|escola|mercado|farm[aá]cia|auto ?pe[cç]as|oficina mec|posto|lava.?jato|fibra|vime|bambu|cadeira de escrit|office/i,
+  'Clínica de estética': /farm[aá]cia|perfumaria|loja de cosm|distribuidor/i,
+  Restaurante: /supermercado|distribuidora|atacad|evento|buffet infantil/i,
+  Academia: /loja de suplement|suplementos/i,
+  'Pet shop': /agropecu|ra[cç][aã]o atacad/i,
+};
+export function relevance(category, title = '', googleCategory = '') {
+  const text = `${title} ${googleCategory}`;
+  if (EXCLUDE[category]?.test(text)) return 'fora';
+  if (INCLUDE[category] && !INCLUDE[category].test(text)) return 'fora';
+  return 'ok';
+}
+/* Qualidade mínima (padrões ajustáveis por campanha) */
+export function quality(data, c = {}) {
+  const minReviews = c.minReviews ?? 5;
+  const minRating = c.minRating ?? 4;
+  if (c.requirePhone !== false && !String(data.phone || '').replace(/\D/g, '')) return 'sem telefone';
+  if ((data.reviews || 0) < minReviews) return `menos de ${minReviews} avaliações`;
+  if (data.rating && data.rating < minRating) return `nota abaixo de ${String(minRating).replace('.', ',')}`;
+  return 'ok';
+}
 
 /* Linha do Google Maps -> lead */
 function fromGoogle(r, campaign) {
@@ -111,12 +145,13 @@ function fromGoogle(r, campaign) {
   const site = String(r.website || r.web_site || '').trim();
   return {
     placeKey: r.place_id || r.cid || r.data_id || `${r.title}|${r.address}`,
-    excluded: EXCLUDE[category]?.test(`${r.category} ${r.title}`) || false,
+    excluded: campaign?.category ? relevance(category, r.title, r.category) !== 'ok' : false,
     data: {
       name: r.title || 'Sem nome',
       brandName: cleanName(r.title || ''),
       gallery,
       reviewSamples: reviewsOf(r),
+      reviewInsights: reviewInsights(asJson(r.user_reviews_extended) || asJson(r.user_reviews) || []),
       category,
       googleCategory: r.category || '',
       contact: '',
@@ -191,12 +226,12 @@ export async function geocode(city) {
 
 async function gosomCreate({ keywords, lang = 'pt', depth = 10, email = true, maxTime = 1500, geo }) {
   // Versão web clássica do projeto: aceita várias palavras-chave num só trabalho
-  const body = { name: keywords[0], keywords, lang, depth, email, max_time: maxTime, zoom: 13 };
+  const body = { name: keywords[0], keywords, lang, depth, email, extra_reviews: true, max_time: maxTime, zoom: 13 };
   if (geo) Object.assign(body, { lat: String(geo.lat), lon: String(geo.lon), radius: 15000 });
   let res = await fetch(`${SCRAPER()}/api/v1/jobs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   if (res.ok) { const j = await res.json(); return { id: j.id || j.job_id, api: 'jobs' }; }
   // Versão nova (POST /api/v1/scrape): uma palavra-chave por trabalho, usamos a principal
-  const nb = { keyword: keywords[0], lang, max_depth: depth, email, timeout: 300 };
+  const nb = { keyword: keywords[0], lang, max_depth: depth, email, extra_reviews: true, timeout: 300 };
   if (geo) Object.assign(nb, { geo_coordinates: `${geo.lat},${geo.lon}`, zoom: 13, radius: 15 });
   res = await fetch(`${SCRAPER()}/api/v1/scrape`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(nb) });
   if (!res.ok) throw new Error(`O Caçador (Google Maps) não aceitou o trabalho: HTTP ${res.status}`);
@@ -313,14 +348,17 @@ export async function enrich(data) {
       .filter((u) => u && !/logo|icon|sprite|avatar|whats|favicon|banner-?pix|payment|selo|badge/i.test(u));
     const sitePhotos = [...new Set([...og, ...imgs].filter(Boolean))].slice(0, 10);
     const logo = abs(html.match(/<img[^>]+(?:src)=["']([^"']*logo[^"']*)["']/i)?.[1] || '') || null;
+    const audit = auditHtml(html, res.url);
     return {
       ...data,
+      siteAudit: audit,
+      ads: data.ads || audit.googleAds || audit.metaPixel,
       instagram: data.instagram || (ig && !['p', 'reel', 'explore', 'accounts'].includes(ig.toLowerCase()) ? `@${ig}` : ''),
       email: data.email || (mail && !/\.(png|jpe?g|webp|svg)$/i.test(mail) ? mail : ''),
       site: {
-        mobile: /<meta[^>]+name=["']viewport/i.test(html),
+        mobile: audit.mobileViewport,
         speed: Math.max(10, Math.min(98, Math.round(100 - ms / 80))),
-        booking: /wa\.me|api\.whatsapp|agend|booking|calendly/i.test(html),
+        booking: audit.whatsappButton || audit.booking,
         https: res.url.startsWith('https://'),
       },
       brand: colors.length ? { source: 'site', colors, logo } : (logo ? { ...(data.brand || {}), logo } : data.brand),
@@ -329,6 +367,46 @@ export async function enrich(data) {
   } catch {
     return { ...data, site: { mobile: false, speed: 10, booking: false, https: false, offline: true } };
   }
+}
+
+/* Enriquecimento completo de um lead: site + PageSpeed + CNPJ/decisor + WhatsApp */
+export async function deepEnrich(data) {
+  let d = data.website && !data.siteAudit ? await enrich(data) : data;
+  if (d.website && !d.site?.offline && !d.pagespeed) {
+    const ps = await pagespeed(d.websiteUrl || `https://${d.website}`);
+    if (ps) d = { ...d, pagespeed: ps, site: { ...(d.site || {}), speed: ps.score, mobile: d.site?.mobile && ps.score >= 50 } };
+  }
+  if (!d.company) {
+    const c = await lookupLead(d).catch(() => null);
+    if (c) {
+      d = { ...d, company: { ...c.company, match: c.match }, decisor: c.decisor || d.decisor || null, email: d.email || c.company.email || '' };
+      if (!d.contact && c.decisor) d.contact = `${c.decisor.nome.split(' ')[0]}, ${c.decisor.cargo.toLowerCase()}`;
+    }
+  }
+  if (d.phone && d.waValid === undefined) {
+    const w = await checkWhatsapp(d.phone);
+    if (w) d = { ...d, waValid: w.exists, whatsapp: w.exists, ...(w.jid ? { waJid: w.jid } : {}) };
+  }
+  return d;
+}
+
+/* Lead vindo só da Receita (empresas ativas do ramo na cidade) */
+function fromCnpj(x, campaign) {
+  const c = x.company;
+  const tel = c.telefones?.[0] || '';
+  const phone = tel.length >= 10 ? `(${tel.slice(0, 2)}) ${tel.slice(2, -4)}-${tel.slice(-4)}` : '';
+  const name = c.fantasia || String(c.razao || 'Sem nome').replace(/^[\d.\s-]+/, '');
+  return {
+    placeKey: `cnpj:${c.cnpj}`,
+    data: {
+      name, brandName: cleanName(name), category: campaign.category, googleCategory: c.cnaeDesc || '', contact: x.decisor ? `${x.decisor.nome.split(' ')[0]}, ${x.decisor.cargo.toLowerCase()}` : '',
+      city: campaign.city, neighborhood: c.bairro ? c.bairro.charAt(0) + c.bairro.slice(1).toLowerCase() : '', address: c.endereco || '', phone,
+      whatsapp: /^\(\d{2}\) 9/.test(phone), website: '', site: null, instagram: '', social: null, email: c.email || '', rating: 0, reviews: 0,
+      unanswered: 0, photos: 0, ads: false, hours: '', tags: ['Receita'], notes: [], analysis: null, blocked: '', owner: 'David', next: 'Na fila de abordagem',
+      palette: CATEGORIES[campaign.category]?.palette || ['#F2EFE9', '#14181D', '#00C48C'], brand: null, source: 'cnpj',
+      company: { ...c, match: 'cnae' }, decisor: x.decisor,
+    },
+  };
 }
 
 /* ---------- execução de uma campanha ---------- */
@@ -348,7 +426,11 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
   (async () => {
     try {
       let items;
-      if (engine === 'osm') {
+      if (engine === 'cnpj') {
+        st.step = 'consultando a base da Receita Federal';
+        items = (await searchByCnae(campaign.category, campaign.city, Number(campaign.cnpjLimit) || 300)).map((x) => fromCnpj(x, campaign));
+        st.raw = items.length;
+      } else if (engine === 'osm') {
         st.step = 'consultando o OpenStreetMap';
         items = await osmSearch(campaign.category, campaign.city);
       } else {
@@ -368,6 +450,7 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
           if (seen.has(it.placeKey)) return false; seen.add(it.placeKey);
           if (/fechado permanentemente|permanently closed/i.test(it.data.status || '')) return false;
           if (it.excluded) { st.offTopic = (st.offTopic || 0) + 1; return false; }
+          if (quality(it.data, campaign) !== 'ok') { st.lowQuality = (st.lowQuality || 0) + 1; return false; }
           if (geo && it.data.lat && it.data.lng && distKm(geo, { lat: it.data.lat, lon: it.data.lng }) > radius) { st.far = (st.far || 0) + 1; return false; }
           return true;
         });
@@ -388,7 +471,14 @@ export async function hunt(campaign, { engine = 'google', log = () => {}, resume
           if (Object.keys(add).length) await q('update leads set data = data || $2 where id = $1', [exists.rows[0].id, add]);
           continue;
         }
-        const data = await enrich(it.data);
+        // Já está no funil por outro caminho (mesmo CNPJ ou telefone)? Não duplica.
+        if (it.data.company?.cnpj) {
+          const dup = await q("select 1 from leads where data->'company'->>'cnpj' = $1 limit 1", [it.data.company.cnpj]);
+          if (dup.rows.length) continue;
+        }
+        st.step = `analisando ${i + 1}/${items.length}: site, CNPJ e WhatsApp`;
+        const data = await deepEnrich(await enrich(it.data));
+        if (engine === 'cnpj' && data.waValid === false) continue; // só fica quem tem WhatsApp
         if (ai?.ai?.analyzeOnFind !== false) data.analysis = analyze(data);
         data.campaign = id;
         await q('insert into leads(stage, campaign_id, place_key, data) values ($1, $2, $3, $4) on conflict (place_key) do nothing', ['found', id, it.placeKey, data]);
@@ -416,3 +506,42 @@ export async function resumeHunts(log) {
 }
 
 export { leadRow };
+
+/* Limpa leads já importados que estão fora do segmento ou abaixo da qualidade (só os ainda não abordados) */
+export async function cleanCampaign(id, c) {
+  const { rows } = await q("select id, data from leads where campaign_id = $1 and stage = 'found'", [id]);
+  const removed = [];
+  for (const r of rows) {
+    const d = r.data;
+    const why = relevance(c.category, d.name, d.googleCategory) !== 'ok' ? 'fora do segmento' : quality(d, c) !== 'ok' ? quality(d, c) : null;
+    if (why) removed.push({ id: r.id, name: d.name, why });
+  }
+  if (removed.length) await q('delete from leads where id = any($1)', [removed.map((x) => x.id)]);
+  return { removed: removed.length, detalhes: removed.slice(0, 50) };
+}
+
+/* Enriquecer leads que já estão no funil (site, PageSpeed, CNPJ/decisor, WhatsApp) */
+const enrichJobs = new Map();
+export const enrichStatus = (id) => enrichJobs.get(String(id)) || null;
+export async function enrichCampaign(id, log = () => {}) {
+  const key = String(id);
+  if (enrichJobs.get(key)?.state === 'running') throw new Error('Já está enriquecendo essa campanha.');
+  const { rows } = await q('select id, data from leads where campaign_id = $1 order by created_at', [id]);
+  const st = { state: 'running', total: rows.length, done: 0, cnpj: 0, decisor: 0, waOk: 0, waNo: 0, startedAt: Date.now() };
+  enrichJobs.set(key, st);
+  (async () => {
+    for (const r of rows) {
+      try {
+        const d = await deepEnrich(r.data);
+        if (d.analysis || r.data.analysis) d.analysis = analyze(d);
+        await q('update leads set data = $2, updated_at = now() where id = $1', [r.id, d]);
+        if (d.company) st.cnpj++; if (d.decisor) st.decisor++; if (d.waValid === true) st.waOk++; if (d.waValid === false) st.waNo++;
+      } catch { /* segue para o próximo */ }
+      st.done++;
+      await new Promise((res) => setTimeout(res, 600));
+    }
+    st.state = 'done'; st.endedAt = Date.now();
+    log(`enriqueceu ${st.done} leads: ${st.cnpj} com CNPJ, ${st.decisor} com decisor, ${st.waOk} com WhatsApp confirmado`);
+  })();
+  return st;
+}

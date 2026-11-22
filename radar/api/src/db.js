@@ -88,6 +88,8 @@ create table if not exists activity (
 
 export async function migrate() {
   await q(SCHEMA);
+  const { SCHEMA: CNPJ_SCHEMA } = await import('./cnpj.js');
+  try { await q(CNPJ_SCHEMA); } catch (e) { console.warn('Base do CNPJ: não foi possível preparar as tabelas:', e.message); }
 }
 
 /* Converte uma linha em objeto do painel */

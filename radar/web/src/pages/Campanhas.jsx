@@ -6,7 +6,7 @@ import { CATEGORIES } from '../data/seed';
 import { useApp } from '../App';
 import { Empty, Modal, Segmented, ago, itemAnim, listAnim, toast } from '../components/ui';
 
-const EMPTY = { name: '', query: '', city: 'Sorocaba', category: 'Clínica de estética', depth: 10, radiusKm: 30, variants: 5, filters: [], variantA: '', variantB: '' };
+const EMPTY = { name: '', query: '', city: 'Sorocaba', category: 'Clínica de estética', depth: 10, radiusKm: 30, variants: 5, minReviews: 5, minRating: 4, filters: [], variantA: '', variantB: '' };
 const FILTERS = ['Com WhatsApp', 'Nota ≥ 4,5', 'Sem site', 'Instagram parado', 'Mais de 50 avaliações'];
 
 export default function Campanhas() {
@@ -99,7 +99,11 @@ export default function Campanhas() {
               <label className="field"><span>Variações do termo</span><select id="cf-var" className="input" value={edit.variants || 5} onChange={(e) => setEdit({ ...edit, variants: +e.target.value })}><option value={1}>Só o meu termo</option><option value={3}>3</option><option value={5}>5</option></select></label>
               <label className="field"><span>Raio (km)</span><input id="cf-radius" className="input" type="number" min="3" max="200" value={edit.radiusKm || 30} onChange={(e) => setEdit({ ...edit, radiusKm: +e.target.value })} /></label>
             </div>
-            <small className="faint" style={{ marginTop: -6 }}>O Caçador busca seu termo e variações do segmento (ex.: “marcenaria”, “móveis sob medida”), centrado na cidade, e descarta quem estiver fora do raio.</small>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+              <label className="field"><span>Mínimo de avaliações</span><input id="cf-minrev" className="input" type="number" min="0" max="500" value={edit.minReviews ?? 5} onChange={(e) => setEdit({ ...edit, minReviews: +e.target.value })} /></label>
+              <label className="field"><span>Nota mínima</span><select id="cf-minrat" className="input" value={edit.minRating ?? 4} onChange={(e) => setEdit({ ...edit, minRating: +e.target.value })}><option value={0}>Qualquer</option><option value={3.5}>3,5</option><option value={4}>4,0</option><option value={4.3}>4,3</option><option value={4.5}>4,5</option></select></label>
+            </div>
+            <small className="faint" style={{ marginTop: -6 }}>O Caçador busca seu termo e variações do segmento (ex.: “marcenaria”, “móveis sob medida”), centrado na cidade, e descarta quem estiver fora do raio, fora do segmento (ex.: espaço de eventos numa campanha de planejados), sem telefone ou abaixo da qualidade mínima.</small>
             <div className="field"><span>Filtros</span><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{FILTERS.map((f) => { const on = edit.filters.includes(f); return <button type="button" key={f} className={`chip ${on ? 'on' : ''}`} onClick={() => setEdit({ ...edit, filters: on ? edit.filters.filter((x) => x !== f) : [...edit.filters, f] })}>{f}</button>; })}</div></div>
             <label className="field"><span>Abordagem A</span><input id="cf-a" className="input" value={edit.variantA} onChange={(e) => setEdit({ ...edit, variantA: e.target.value })} placeholder="Vi que a {empresa} tem nota {nota}, mas…" /><small>Deixe em branco para a IA escrever. Variáveis: {'{empresa}'}, {'{nota}'}, {'{avaliacoes}'}.</small></label>
             <label className="field"><span>Abordagem B (teste A/B)</span><input id="cf-b" className="input" value={edit.variantB} onChange={(e) => setEdit({ ...edit, variantB: e.target.value })} placeholder="Opcional" /></label>

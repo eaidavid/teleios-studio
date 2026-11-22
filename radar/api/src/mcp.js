@@ -10,7 +10,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 import { q, leadRow, siteRow, requestRow, completeRequests } from './db.js';
-import { hunt, huntStatus, cleanName } from './cacador.js';
+import { hunt, huntStatus, cleanName, cleanCampaign, deepEnrich } from './cacador.js';
+import { analyze as analyzeLead } from '../../web/src/data/analysis.js';
 import { enqueue, waStatus } from './whatsapp.js';
 import { kvGet, kvSet } from './db.js';
 import { seedSettings as defaults } from '../../web/src/data/seed.js';
@@ -135,6 +136,40 @@ function buildServer() {
     if (!l) return fail('Lead não existe.');
     await patchLead(id, { notes: [{ id: Date.now(), text: texto, at: Date.now(), by: 'Claude' }, ...(l.notes || [])] });
     return text('Nota adicionada.');
+  });
+
+  server.registerTool('salvar_redes', {
+    description: 'Grava no lead o que você descobriu pesquisando na web (use sua busca na web): Instagram, Facebook, site e o DECISOR (dono/sócio). Informe sempre a fonte. Só dados públicos e profissionais.',
+    inputSchema: {
+      lead_id: z.number().int(),
+      instagram: z.string().optional().describe('@usuario'), facebook: z.string().optional(), site: z.string().optional(),
+      decisor: z.object({ nome: z.string(), cargo: z.string(), fonte: z.string() }).optional(),
+      seguidores: z.number().int().optional(), ultimo_post_dias: z.number().int().optional(),
+    },
+  }, async ({ lead_id, instagram, facebook, site, decisor, seguidores, ultimo_post_dias }) => {
+    const l = await getLead(lead_id);
+    if (!l) return fail('Lead não existe.');
+    const patch = {};
+    if (instagram) patch.instagram = instagram.startsWith('@') ? instagram : `@${instagram.replace(/.*instagram\.com\//, '').replace(/\/.*/, '')}`;
+    if (facebook) patch.facebook = facebook;
+    if (site) patch.website = site.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    if (decisor) { patch.decisor = { ...decisor, fonte: decisor.fonte || 'pesquisa do Claude' }; if (!l.contact) patch.contact = `${decisor.nome.split(' ')[0]}, ${decisor.cargo.toLowerCase()}`; }
+    if (seguidores != null || ultimo_post_dias != null) patch.social = { ...(l.social || {}), followers: seguidores ?? l.social?.followers, lastPostDays: ultimo_post_dias ?? l.social?.lastPostDays };
+    const next = await patchLead(lead_id, patch);
+    await patchLead(lead_id, { analysis: { ...analyzeLead(next), ...(l.analysis?.by === 'claude' ? { summary: l.analysis.summary, angle: l.analysis.angle, message: l.analysis.message, by: 'claude' } : {}) } });
+    return text('Salvo no Radar.');
+  });
+
+  server.registerTool('enriquecer_lead', {
+    description: 'Roda o enriquecimento completo de um lead: diagnóstico do site (plataforma, Pixel, Google Ads, abandono), nota do Google PageSpeed, CNPJ e decisor na Receita Federal e se o telefone tem WhatsApp.',
+    inputSchema: { lead_id: z.number().int() },
+  }, async ({ lead_id }) => {
+    const l = await getLead(lead_id);
+    if (!l) return fail('Lead não existe.');
+    const d = await deepEnrich({ ...l, siteAudit: undefined, pagespeed: undefined, company: undefined, waValid: undefined });
+    d.analysis = analyzeLead(d);
+    await patchLead(lead_id, d);
+    return text({ site: d.siteAudit || null, pagespeed: d.pagespeed || null, empresa: d.company || null, decisor: d.decisor || null, whatsapp: d.waValid ?? 'não conferido (WhatsApp desconectado)' });
   });
 
   server.registerTool('catalogo_construtor', {
@@ -344,16 +379,27 @@ function buildServer() {
       buscar_agora: z.boolean().optional(),
       profundidade: z.number().int().min(3).max(30).optional().describe('Rolagem na lista do Maps: 10 normal, 20 completa'),
       raio_km: z.number().int().min(3).max(200).optional(),
-      motor: z.enum(['google', 'osm']).optional().describe('google (padrão, mais dados) ou osm (gratuito)'),
+      min_avaliacoes: z.number().int().min(0).max(500).optional().describe('Padrão 5. Menos que isso costuma ser negócio pequeno demais.'),
+      nota_minima: z.number().min(0).max(5).optional().describe('Padrão 4,0'),
+      motor: z.enum(['google', 'osm', 'cnpj']).optional().describe('google (padrão, mais dados), osm (gratuito) ou cnpj (empresas ativas do ramo na Receita Federal, inclusive fora do Maps; precisa da base importada)'),
     },
-  }, async ({ nome, busca, cidade, segmento, filtros = [], buscar_agora, motor = 'google', profundidade = 10, raio_km = 30 }) => {
-    const { rows } = await q('insert into campaigns(data) values ($1) returning id', [{ name: nome, query: busca, city: cidade, category: segmento, filters: filtros, depth: profundidade, radiusKm: raio_km, variants: 5, status: 'running', variantA: '', variantB: '' }]);
+  }, async ({ nome, busca, cidade, segmento, filtros = [], buscar_agora, motor = 'google', profundidade = 10, raio_km = 30, min_avaliacoes = 5, nota_minima = 4 }) => {
+    const { rows } = await q('insert into campaigns(data) values ($1) returning id', [{ name: nome, query: busca, city: cidade, category: segmento, filters: filtros, depth: profundidade, radiusKm: raio_km, variants: 5, minReviews: min_avaliacoes, minRating: nota_minima, status: 'running', variantA: '', variantB: '' }]);
     const id = rows[0].id;
     let busca_status = 'não iniciada';
     if (buscar_agora) {
-      try { await hunt({ id, name: nome, query: busca, city: cidade, category: segmento, depth: profundidade, radiusKm: raio_km, variants: 5 }, { engine: motor, log: (t) => logActivity('cacador', t) }); busca_status = 'rodando (leva alguns minutos; acompanhe com status_busca)'; } catch (e) { busca_status = `não iniciou: ${e.message}`; }
+      try { await hunt({ id, name: nome, query: busca, city: cidade, category: segmento, depth: profundidade, radiusKm: raio_km, variants: 5, minReviews: min_avaliacoes, minRating: nota_minima }, { engine: motor, log: (t) => logActivity('cacador', t) }); busca_status = 'rodando (leva alguns minutos; acompanhe com status_busca)'; } catch (e) { busca_status = `não iniciou: ${e.message}`; }
     }
     return text({ campanha_id: id, busca: busca_status });
+  });
+
+  server.registerTool('limpar_campanha', {
+    description: 'Remove da campanha os leads ainda não abordados que estão fora do segmento (ex.: espaço de eventos numa campanha de planejados) ou abaixo da qualidade mínima (poucas avaliações, nota baixa, sem telefone).',
+    inputSchema: { campanha_id: z.number().int() },
+  }, async ({ campanha_id }) => {
+    const { rows } = await q('select * from campaigns where id = $1', [campanha_id]);
+    if (!rows[0]) return fail('Campanha não existe.');
+    return text(await cleanCampaign(rows[0].id, rows[0].data));
   });
 
   server.registerTool('status_busca', {

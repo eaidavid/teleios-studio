@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, Clock, Database, KeyRound, Link2, MessageSquareText, RefreshCw, RotateCcw, ShieldCheck, Smartphone, Unplug, Users } from 'lucide-react';
+import { Bot, Building2, Clock, Database, KeyRound, Link2, MessageSquareText, RefreshCw, RotateCcw, ShieldCheck, Smartphone, Unplug, Users } from 'lucide-react';
 import { actions, useStore } from '../data/store';
 import { useApp } from '../App';
 import WhatsAppConnect from '../components/WhatsAppConnect';
+import CnpjBase from '../components/CnpjBase';
 import { Segmented, Switch, ease, toast } from '../components/ui';
 
 const SECTIONS = [
@@ -12,6 +13,7 @@ const SECTIONS = [
   { id: 'mensagens', label: 'Mensagens', icon: MessageSquareText },
   { id: 'ia', label: 'Inteligência artificial', icon: Bot },
   { id: 'integracoes', label: 'Integrações', icon: Link2 },
+  { id: 'empresas', label: 'Dados de empresas', icon: Building2 },
   { id: 'equipe', label: 'Equipe', icon: Users },
   { id: 'dados', label: 'Dados e privacidade', icon: Database },
 ];
@@ -69,6 +71,7 @@ export default function Config() {
                 <Row title="Pausar se houver bloqueio" hint="Se alguém bloquear ou denunciar, os envios param por 24 horas."><Switch on label="Pausar em bloqueio" onChange={() => toast('Mantido ligado por segurança')} /></Row>
               </>
             )}
+            {sec === 'empresas' && <CnpjBase live={mode === 'api'} />}
             {sec === 'limites' && (
               <>
                 <h2>Horários e limites</h2><p>O ritmo que protege o número de bloqueios.</p>

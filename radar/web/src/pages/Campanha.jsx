@@ -36,6 +36,7 @@ function HuntCard({ c, live }) {
           <div style={{ display: 'flex', gap: 6 }}>
             <button type="button" className="btn btn-primary btn-sm" onClick={() => run('google')}><Radar size={13} />{h?.state === 'done' ? 'Buscar de novo' : 'Buscar agora'}</button>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => run('osm')}>OSM</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => run('cnpj')} title="Empresas ativas do ramo na Receita Federal (inclusive fora do Maps)">Receita (CNPJ)</button>
           </div>
         )}
       </div>
@@ -52,7 +53,7 @@ function HuntCard({ c, live }) {
         </div>
       )}
       {h?.keywords?.length > 0 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{h.keywords.map((k) => <span key={k} className="tag">{k}</span>)}</div>}
-      {h?.state === 'done' && h.raw > 0 && <p className="faint" style={{ margin: 0, fontSize: 12 }}>{h.raw} resultados brutos · repetidos removidos{h.far ? ` · ${h.far} fora do raio descartados` : ''}</p>}
+      {h?.state === 'done' && h.raw > 0 && <p className="faint" style={{ margin: 0, fontSize: 12 }}>{h.raw} resultados brutos · repetidos removidos{h.offTopic ? ` · ${h.offTopic} fora do segmento` : ''}{h.lowQuality ? ` · ${h.lowQuality} abaixo da qualidade` : ''}{h.far ? ` · ${h.far} fora do raio` : ''}</p>}
       {running && h.phase !== 'sites' && <p className="faint" style={{ margin: 0, fontSize: 12 }}>O Google Maps leva de 3 a 15 minutos, conforme o tamanho da cidade. Pode sair desta tela; a busca continua no servidor.</p>}
     </section>
   );
@@ -66,6 +67,17 @@ const STEPS = [
   { key: 'sent', label: 'Abordadas', bot: 'Envio', icon: Send, color: 'var(--tech)' },
   { key: 'replied', label: 'Responderam', bot: 'Triagem', icon: Inbox, color: '#FF7A59' },
 ];
+
+function EnrichButton({ id }) {
+  const [st, setSt] = useState(null);
+  useEffect(() => {
+    if (st?.state !== 'running') return undefined;
+    const t = setInterval(() => actions.enrichStatus(id).then((x) => { setSt(x); if (x.state !== 'running') { actions.refresh(); toast(`Pronto: ${x.cnpj} com CNPJ, ${x.decisor} com decisor, ${x.waOk} com WhatsApp`); } }), 4000);
+    return () => clearInterval(t);
+  }, [st?.state, id]);
+  const go = () => actions.enrichCampaign(id).then(setSt, (e) => toast(e.message));
+  return <button type="button" className="btn btn-ghost btn-sm" onClick={go} disabled={st?.state === 'running'} title="Site, PageSpeed, CNPJ, decisor e WhatsApp de cada lead">{st?.state === 'running' ? `Enriquecendo ${st.done}/${st.total}…` : 'Enriquecer leads'}</button>;
+}
 
 export default function Campanha() {
   const app = useApp();
@@ -126,6 +138,8 @@ export default function Campanha() {
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <button type="button" className={`chip ${sort === 'opp' ? 'on' : ''}`} onClick={() => setSort('opp')}>Maior oportunidade</button>
             <button type="button" className={`chip ${sort === 'rating' ? 'on' : ''}`} onClick={() => setSort('rating')}>Melhor nota</button>
+            {live && p.found > 0 && <EnrichButton id={c.id} />}
+            {live && p.found > 0 && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { if (!confirm('Remover os leads ainda não abordados que estão fora do segmento ou abaixo da qualidade mínima?')) return; actions.cleanCampaign(c.id).then((r) => toast(r.removed ? `${r.removed} leads ruins removidos` : 'Nada para limpar'), (e) => toast(e.message)); }}>Limpar leads ruins</button>}
             {top.length > 0 && <AskClaude kind="previa" leads={top} label={`Prévias das ${top.length} primeiras`} className="btn btn-primary btn-sm" />}
           </div>
         </div>
